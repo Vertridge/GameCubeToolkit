@@ -34,5 +34,10 @@
 # VSCode
 .vscode
 .vs
+
 # Build dir
 build
+
+# Illegale to commit
+ROMS
+mount
