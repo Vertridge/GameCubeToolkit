@@ -75,60 +75,60 @@ bool DOLFile::ReadData(std::ifstream &input) {
   return true;
 }
 
-void DOLFile::PrintHeader() {
+void DOLFile::PrintHeader(std::ostream &os) {
   // clang-format off
-  std::cout << "Printing: " << mFileName << "\n";
-  std::cout << "TextSection Offsets: " << "\n";
+  os << "Printing Header: " << mFileName << "\n";
+  os << "TextSection Offsets: " << "\n";
   for (std::size_t i = 0; i < DOLNumberOfTextSections; ++i) {
-    std::cout << " 0x" << std::hex << mHeader->TextSectionOffsets[i] 
+    os << " 0x" << std::hex << mHeader->TextSectionOffsets[i] 
               << " " << std::dec << mHeader->TextSectionOffsets[i] << "\n";
   }
-  std::cout << "DataSection Offsets: " << "\n";
+  os << "DataSection Offsets: " << "\n";
   for (std::size_t i = 0; i < DOLNumberOfDataSections; ++i) {
-    std::cout << " 0x" << std::hex << mHeader->DataSectionOffsets[i] 
+    os << " 0x" << std::hex << mHeader->DataSectionOffsets[i] 
               << " " << std::dec << mHeader->DataSectionOffsets[i] << "\n";
   }
-  std::cout << "TextSection Addresses: " << "\n";
+  os << "TextSection Addresses: " << "\n";
   for (std::size_t i = 0; i < DOLNumberOfTextSections; ++i) {
-    std::cout << " 0x" << std::hex << mHeader->TextSectionAddresses[i] 
+    os << " 0x" << std::hex << mHeader->TextSectionAddresses[i] 
               << " " << std::dec << mHeader->TextSectionAddresses[i] << "\n";
   }
-  std::cout << "DataSection Addresses: " << "\n";
+  os << "DataSection Addresses: " << "\n";
   for (std::size_t i = 0; i < DOLNumberOfDataSections; ++i) {
-    std::cout << " 0x" << std::hex << mHeader->DataSectionAddresses[i] 
+    os << " 0x" << std::hex << mHeader->DataSectionAddresses[i] 
               << " " << " " << std::dec << mHeader->DataSectionAddresses[i] << "\n";
   }
-  std::cout << "TextSection Sizes: " << "\n";
+  os << "TextSection Sizes: " << "\n";
   for (std::size_t i = 0; i < DOLNumberOfTextSections; ++i) {
-    std::cout << " 0x" << std::hex << mHeader->TextSectionSizes[i] 
+    os << " 0x" << std::hex << mHeader->TextSectionSizes[i] 
               << " " << std::dec << mHeader->TextSectionSizes[i] << "\n";
   }
-  std::cout << "DataSection Sizes: " << "\n";
+  os << "DataSection Sizes: " << "\n";
   for (std::size_t i = 0; i < DOLNumberOfDataSections; ++i) {
-    std::cout << " 0x" << std::hex << mHeader->DataSectionSizes[i] 
+    os << " 0x" << std::hex << mHeader->DataSectionSizes[i] 
               << " " << std::dec << mHeader->DataSectionSizes[i] << "\n";
   }
-  std::cout << "BSS Address: 0x" << std::hex << mHeader->BSSAddress 
+  os << "BSS Address: 0x" << std::hex << mHeader->BSSAddress 
                         << " " << std::dec << mHeader->BSSAddress << "\n";
-  std::cout << "BSS Size: 0x" << std::hex << mHeader->BSSSize
+  os << "BSS Size: 0x" << std::hex << mHeader->BSSSize
                      << " " << std::dec << mHeader->BSSSize << "\n";
-  std::cout << "Entry Point: 0x" << std::hex << mHeader->EntryPointAddress
+  os << "Entry Point: 0x" << std::hex << mHeader->EntryPointAddress
                         << " " << std::dec << mHeader->EntryPointAddress << "\n";
-  std::cout << "Padding: \n";
+  os << "Padding: \n";
   for (std::size_t i = 0; i < DOLPaddingSize; ++i) {
-    std::cout << " 0x" << std::hex << mHeader->Padding[i]
+    os << " 0x" << std::hex << mHeader->Padding[i]
               << " " << std::dec << mHeader->Padding[i] << "\n";
   }
-  std::cout << std::endl;
+  os << std::endl;
 }
 
-void DOLFile::PrintData(std::size_t begin, std::size_t size) {
+void DOLFile::PrintData(std::ostream& os, std::size_t begin, std::size_t size) {
   if(size == 0) {
     size = mDataBuffer.size() - begin; 
   }
   
   for(auto i = begin; i < (begin + size); ++i) {
-    std::cout << std::setw(2) << std::setfill('0') << std::hex << (int)(mDataBuffer[i] & 0xff) << " ";
+    os << std::setw(2) << std::setfill('0') << std::hex << (int)(mDataBuffer[i] & 0xff) << " ";
   }
-  std::cout << std::endl;
+  os << std::endl;
 }

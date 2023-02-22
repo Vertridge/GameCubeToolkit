@@ -1,3 +1,4 @@
+#include <fstream>
 #include <iostream>
 
 #include <Parser/DOL.h>
@@ -17,9 +18,17 @@ int main(int argc, char *argv[]) {
     std::cerr << "Failed to open:" << argv[1] << std::endl;
     return 1;
   }
-  dol.PrintHeader();
 
-  Disassembler::DisassemblePPC(dol);
+  std::string output = "disassemble.txt";
+  if (argc >= 3) {
+    output = argv[2];
+  }
+
+  std::ofstream ofstrm(output, std::ios::binary);
+
+  dol.PrintHeader(ofstrm);
+
+  PowerPC::Disassembler::DisassemblePPC(dol, ofstrm);
 
   return 0;
 }

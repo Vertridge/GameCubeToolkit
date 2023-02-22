@@ -30,8 +30,9 @@ public:
   DOLFile(std::string file);
   bool Parse(std::string file);
 
-  void PrintHeader();
-  void PrintData(std::size_t begin = 0, std::size_t sizea = 0);
+  void PrintHeader(std::ostream &os);
+  void PrintData(std::ostream &os, std::size_t begin = 0,
+                 std::size_t sizea = 0);
   DOLHeader *GetHeader() { return mHeader; }
   const DOLHeader *GetHeader() const { return mHeader; }
   std::vector<std::uint8_t> &GetData() { return mDataBuffer; }

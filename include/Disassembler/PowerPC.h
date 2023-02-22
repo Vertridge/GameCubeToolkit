@@ -10,14 +10,15 @@
 
 #include <ostream>
 
-namespace Disassembler {
+namespace PowerPC::Disassembler {
 
-void DisassemblePPC(Patcher::Parsing::DOLFile &dol);
+void DisassemblePPC(Patcher::Parsing::DOLFile &dol, std::ostream &os);
+
 void DisassembleSection(std::uint32_t offset, std::uint32_t address,
-                        std::uint32_t size, std::vector<std::uint8_t> &data);
-
+                        std::uint32_t size, std::vector<std::uint8_t> &data,
+                        std::ostream &os);
 void PrintInstruction(cs_insn *ins, std::ostream &os, bool details = false);
 
-} // namespace Disassembler
+} // namespace PowerPC::Disassembler
 
 void test();
