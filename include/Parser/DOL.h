@@ -27,11 +27,16 @@ struct DOLHeader {
 class DOLFile {
 public:
   DOLFile() = default;
-  DOLFile(std::filesystem::path file);
-  bool Parse(std::filesystem::path file);
+  DOLFile(std::string file);
+  bool Parse(std::string file);
 
-  void PrintHeader();
-  void PrintData(std::size_t begin = 0, std::size_t sizea = 0);
+  void PrintHeader(std::ostream &os);
+  void PrintData(std::ostream &os, std::size_t begin = 0,
+                 std::size_t sizea = 0);
+  DOLHeader *GetHeader() { return mHeader; }
+  const DOLHeader *GetHeader() const { return mHeader; }
+  std::vector<std::uint8_t> &GetData() { return mDataBuffer; }
+  const std::vector<std::uint8_t> &GetData() const { return mDataBuffer; }
 
 private:
   bool ParseHeader(std::ifstream &input);
@@ -39,8 +44,8 @@ private:
   bool ReadData(std::ifstream &input);
 
   DOLHeader *mHeader;
-  std::vector<char> mHeaderBuffer;
-  std::vector<char> mDataBuffer;
+  std::vector<std::uint8_t> mHeaderBuffer;
+  std::vector<std::uint8_t> mDataBuffer;
   std::string mFileName;
 };
 

@@ -1,6 +1,9 @@
+#include <fstream>
 #include <iostream>
 
 #include <Parser/DOL.h>
+
+#include "Disassembler/PowerPC.h"
 
 int main(int argc, char *argv[]) {
   if (argc < 2) {
@@ -11,8 +14,21 @@ int main(int argc, char *argv[]) {
   std::cout << "DOLPatcher: " << argv[1] << std::endl;
 
   Patcher::Parsing::DOLFile dol;
-  dol.Parse(argv[1]);
-  dol.PrintHeader();
+  if (!dol.Parse(argv[1])) {
+    std::cerr << "Failed to open:" << argv[1] << std::endl;
+    return 1;
+  }
+
+  std::string output = "disassemble.txt";
+  if (argc >= 3) {
+    output = argv[2];
+  }
+
+  std::ofstream ofstrm(output, std::ios::binary);
+
+  dol.PrintHeader(ofstrm);
+
+  PowerPC::Disassembler::DisassemblePPC(dol, ofstrm);
 
   return 0;
 }
