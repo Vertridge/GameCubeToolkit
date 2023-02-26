@@ -28,7 +28,12 @@ int main(int argc, char *argv[]) {
 
   dol.PrintHeader(ofstrm);
 
-  PowerPC::Disassembler::DisassemblePPC(dol, ofstrm);
+  auto program = PowerPC::Disassembler::DisassemblePPC(dol, ofstrm);
+
+  std::string output2 = "dump.txt";
+  std::ofstream dmpstrm(output2, std::ios::binary);
+
+  program.Dump(dmpstrm);
 
   return 0;
 }
