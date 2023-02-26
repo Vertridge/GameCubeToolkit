@@ -1,10 +1,16 @@
 #include "Disassembler/PowerPC.h"
 
+#include "Disassembler/Program.h"
+
+#include <algorithm>
 #include <iostream>
 #include <ostream>
 #include <stdio.h>
 
 using namespace PowerPC;
+
+constexpr std::array<ppc_insn, 6> BranchInstructions = {
+    PPC_INS_B, PPC_INS_BL, PPC_INS_BC, PPC_INS_BDZ, PPC_INS_BDNZ};
 
 static csh handle;
 
@@ -111,12 +117,23 @@ void Disassembler::PrintInstruction(cs_insn *ins, std::ostream &os,
   os << "\n";
 }
 
-void Disassembler::DisassembleSection(std::uint32_t offset,
-                                      std::uint32_t address, std::uint32_t size,
-                                      std::vector<std::uint8_t> &data,
-                                      std::ostream &os) {
+std::shared_ptr<Function> CreateFunction(std::uint32_t address) {
+  std::stringstream stream;
+  stream << "function_0x" << std::hex << address;
+
+  return std::make_shared<Function>(stream.str(), address);
+}
+
+TextSection Disassembler::DisassembleSection(std::uint32_t offset,
+                                             std::uint32_t address,
+                                             std::uint32_t size,
+                                             std::vector<std::uint8_t> &data,
+                                             std::ostream &os) {
+
+  TextSection textSection(offset, address, size);
+
   if (size == 0) {
-    return;
+    return textSection;
   }
 
   cs_insn *insn;
@@ -124,15 +141,14 @@ void Disassembler::DisassembleSection(std::uint32_t offset,
   auto end = start + size;
   std::size_t codeStart = offset - sizeof(Patcher::Parsing::DOLHeader);
   auto *code = data.data() + codeStart;
-  std::cout << std::hex << code << " " << *code << std::endl;
   size_t code_size = size;
   size_t addr = address;
   size_t totalCount = 0;
+  auto &instructions = textSection.GetInstructions();
   while (addr < end) {
-    auto count =
-        cs_disasm(handle, code, code_size, addr, size - codeStart, &insn);
+    auto count = cs_disasm(handle, code, code_size, addr, 1, &insn);
+
     if (!count) {
-      printf("Error: failed at %ld : size: %d\n", addr, size);
       os << "0x" << std::hex << addr << "\t"
          << "0x" << +(*code) << "\n";
       addr += sizeof(std::uint32_t);
@@ -146,23 +162,53 @@ void Disassembler::DisassembleSection(std::uint32_t offset,
 
     for (std::size_t j = 0; j < count; j++) {
       PrintInstruction(&insn[j], os, /*details*/ false);
+      std::stringstream instr;
+      instr << "\t" << insn[j].mnemonic << "\t" << insn[j].op_str;
+
+      instructions.emplace_back(
+          std::make_shared<Instruction>(instr.str(), addr));
+      if (insn[j].id == PPC_INS_BL) {
+        if (insn->detail == NULL) {
+          continue;
+        }
+        cs_ppc *ppc = &(insn->detail->ppc);
+        for (auto i = 0; i < ppc->op_count; i++) {
+          auto *op = &(ppc->operands[i]);
+          if ((int)op->type != PPC_OP_IMM) {
+            continue;
+          }
+
+          std::uint32_t funcAddr = static_cast<std::uint32_t>(op->imm);
+          if (textSection.HasFunctionAt(funcAddr) ||
+              !textSection.AddressInSection(funcAddr)) {
+            continue;
+          }
+
+          auto func = CreateFunction(funcAddr);
+          textSection.AddFunction(funcAddr, std::move(func));
+        }
+      }
     }
     cs_free(insn, count);
     totalCount += count;
-    printf("Count: %ld / %ld\n", count, totalCount);
+
     addr += count * sizeof(std::uint32_t);
     code += count * sizeof(std::uint32_t);
   }
+  return textSection;
 }
 
-void Disassembler::DisassemblePPC(Patcher::Parsing::DOLFile &dol,
-                                  std::ostream &os) {
+Program Disassembler::DisassemblePPC(Patcher::Parsing::DOLFile &dol,
+                                     std::ostream &os) {
 
   cs_err err = cs_open(CS_ARCH_PPC, CS_MODE_BIG_ENDIAN, &handle);
   if (err) {
     printf("Failed on cs_open() with error returned: %u\n", err);
     abort();
   }
+
+  Program program;
+  program.SetName(dol.GetFileName());
 
   cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
 
@@ -172,10 +218,28 @@ void Disassembler::DisassemblePPC(Patcher::Parsing::DOLFile &dol,
        << "\taddress 0x" << dol.GetHeader()->TextSectionAddresses[i]
        << "\tsize 0x" << dol.GetHeader()->TextSectionSizes[i] << "\n";
 
-    DisassembleSection(dol.GetHeader()->TextSectionOffsets[i],
-                       dol.GetHeader()->TextSectionAddresses[i],
-                       dol.GetHeader()->TextSectionSizes[i], dol.GetData(), os);
+    auto textSection = DisassembleSection(
+        dol.GetHeader()->TextSectionOffsets[i],
+        dol.GetHeader()->TextSectionAddresses[i],
+        dol.GetHeader()->TextSectionSizes[i], dol.GetData(), os);
+    textSection.SetName("TextSection_" + std::to_string(i));
+    ParseInstructionToFunctions(textSection);
+    program.AddTextSection(std::move(textSection));
   }
 
   cs_close(&handle);
+
+  return program;
+}
+
+void PowerPC::ParseInstructionToFunctions(TextSection &section) {
+  auto &instructions = section.GetInstructions();
+  std::shared_ptr<Function> &tempfunction = section.begin()->second;
+  for (auto &instr : instructions) {
+    if (section.HasFunctionAt(instr->GetAddress())) {
+      tempfunction = section.GetFunction(instr->GetAddress());
+    }
+    instr->SetParent(tempfunction);
+    tempfunction->Add(instr);
+  }
 }
