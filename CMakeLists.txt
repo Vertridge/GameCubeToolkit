@@ -39,10 +39,9 @@ endif()
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
 
-include_directories(${PROJECT_SOURCE_DIR}/include)
+include_directories(${CMAKE_SOURCE_DIR}/GCToolkit/include)
+add_subdirectory(GCToolkit)
+add_subdirectory(tools)
 
-add_subdirectory(lib)
 
-add_executable(DOLPatcher DOLPatcher.cpp)
-target_link_libraries(DOLPatcher Parser Disassembler)
 

@@ -1,0 +1,2 @@
+add_executable(DOLDisassembler DOLDisassembler.cpp)
+target_link_libraries(DOLDisassembler Parser Disassembler)
