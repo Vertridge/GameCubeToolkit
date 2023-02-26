@@ -40,6 +40,7 @@ public:
 
   std::string GetFileName() const { return mFileName; }
 
+
 private:
   bool ParseHeader(std::ifstream &input);
 

@@ -200,7 +200,6 @@ TextSection Disassembler::DisassembleSection(std::uint32_t offset,
 
 Program Disassembler::DisassemblePPC(Patcher::Parsing::DOLFile &dol,
                                      std::ostream &os) {
-
   cs_err err = cs_open(CS_ARCH_PPC, CS_MODE_BIG_ENDIAN, &handle);
   if (err) {
     printf("Failed on cs_open() with error returned: %u\n", err);
