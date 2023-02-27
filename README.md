@@ -1,4 +1,4 @@
-# GCToolkit
+# GameCubeToolkit
 
 Library and tools to read and modify Gamecube related files.
 
