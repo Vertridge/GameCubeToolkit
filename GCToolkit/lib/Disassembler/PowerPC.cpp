@@ -139,7 +139,7 @@ TextSection Disassembler::DisassembleSection(std::uint32_t offset,
   cs_insn *insn;
   auto start = address;
   auto end = start + size;
-  std::size_t codeStart = offset - sizeof(Patcher::Parsing::DOLHeader);
+  std::size_t codeStart = offset - sizeof(Parsing::DOLHeader);
   auto *code = data.data() + codeStart;
   size_t code_size = size;
   size_t addr = address;
@@ -198,8 +198,7 @@ TextSection Disassembler::DisassembleSection(std::uint32_t offset,
   return textSection;
 }
 
-Program Disassembler::DisassemblePPC(Patcher::Parsing::DOLFile &dol,
-                                     std::ostream &os) {
+Program Disassembler::DisassemblePPC(Parsing::DOLFile &dol, std::ostream &os) {
   cs_err err = cs_open(CS_ARCH_PPC, CS_MODE_BIG_ENDIAN, &handle);
   if (err) {
     printf("Failed on cs_open() with error returned: %u\n", err);
@@ -211,7 +210,7 @@ Program Disassembler::DisassemblePPC(Patcher::Parsing::DOLFile &dol,
 
   cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
 
-  for (std::size_t i = 0; i < Patcher::Parsing::DOLNumberOfTextSections; ++i) {
+  for (std::size_t i = 0; i < Parsing::DOLNumberOfTextSections; ++i) {
     os << "Text Section[" << i << "]\t"
        << "offset 0x" << std::hex << dol.GetHeader()->TextSectionOffsets[i]
        << "\taddress 0x" << dol.GetHeader()->TextSectionAddresses[i]

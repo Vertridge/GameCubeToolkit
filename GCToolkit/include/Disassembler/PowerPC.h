@@ -1,6 +1,5 @@
 #pragma once
 
-
 #include "Disassembler/Program.h"
 
 #include "Parser/DOL.h"
@@ -20,7 +19,7 @@ class TextSection;
 
 namespace Disassembler {
 
-Program DisassemblePPC(Patcher::Parsing::DOLFile &dol, std::ostream &os);
+Program DisassemblePPC(Parsing::DOLFile &dol, std::ostream &os);
 
 TextSection DisassembleSection(std::uint32_t offset, std::uint32_t address,
                                std::uint32_t size,

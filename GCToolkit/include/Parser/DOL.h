@@ -2,10 +2,11 @@
 
 #include <cstdint>
 #include <filesystem>
+#include <istream>
 #include <string>
 #include <vector>
 
-namespace Patcher::Parsing {
+namespace Parsing {
 
 constexpr std::size_t DOLNumberOfTextSections = 7;
 constexpr std::size_t DOLNumberOfDataSections = 11;
@@ -29,6 +30,9 @@ public:
   DOLFile() = default;
   DOLFile(std::string file);
   bool Parse(std::string file);
+  bool Parse(std::istream &stream);
+  bool ParseHeader(std::istream &input);
+  bool ReadData(std::istream &input);
 
   void PrintHeader(std::ostream &os);
   void PrintData(std::ostream &os, std::size_t begin = 0,
@@ -40,16 +44,11 @@ public:
 
   std::string GetFileName() const { return mFileName; }
 
-
 private:
-  bool ParseHeader(std::ifstream &input);
-
-  bool ReadData(std::ifstream &input);
-
   DOLHeader *mHeader;
   std::vector<std::uint8_t> mHeaderBuffer;
   std::vector<std::uint8_t> mDataBuffer;
   std::string mFileName;
 };
 
-} // namespace Patcher::Parsing
+} // namespace Parsing

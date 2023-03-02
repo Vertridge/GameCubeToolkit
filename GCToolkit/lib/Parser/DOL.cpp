@@ -8,9 +8,21 @@
 #include <iomanip>
 #include <iostream>
 
-using namespace Patcher::Parsing;
+using namespace Parsing;
 
 DOLFile::DOLFile(std::string file) { Parse(file); }
+
+bool DOLFile::Parse(std::istream &stream) {
+  if (stream.peek() == EOF) {
+    std::cerr << "Failed to open: " << mFileName << " " << std::strerror(errno)
+              << std::endl;
+    return false;
+  }
+  std::cerr << "Parsing header" << std::endl;
+  ParseHeader(stream);
+  ReadData(stream);
+  return true;
+}
 
 bool DOLFile::Parse(std::string file) {
   mFileName = file;
@@ -21,14 +33,10 @@ bool DOLFile::Parse(std::string file) {
               << std::endl;
     return false;
   }
-  std::cerr << "Parsing header" << std::endl;
-  ParseHeader(input);
-  ReadData(input);
-  input.close();
-  return true;
+  return Parse(input);
 }
 
-bool DOLFile::ParseHeader(std::ifstream &input) {
+bool DOLFile::ParseHeader(std::istream &input) {
   mHeaderBuffer.resize(sizeof(DOLHeader));
   input.read(reinterpret_cast<char *>(mHeaderBuffer.data()),
              mHeaderBuffer.size());
@@ -55,13 +63,14 @@ bool DOLFile::ParseHeader(std::ifstream &input) {
   }
   util::SwapBinary(mHeader->BSSAddress);
   util::SwapBinary(mHeader->BSSSize);
+  util::SwapBinary(mHeader->EntryPointAddress);
   for (std::size_t i = 0; i < DOLPaddingSize; ++i) {
     util::SwapBinary(mHeader->Padding[i]);
   }
   return true;
 }
 
-bool DOLFile::ReadData(std::ifstream &input) {
+bool DOLFile::ReadData(std::istream &input) {
   // Save begin position to start reading.
   auto beginpos = input.tellg();
   input.seekg(0, std::ios::end);

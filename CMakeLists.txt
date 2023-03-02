@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(DOLPatcher VERSION 0.1.0)
+project(GameCubeToolkit VERSION 0.1.0)
 
 # specify the C++ standard
 set(CMAKE_CXX_STANDARD 17)
@@ -39,8 +39,10 @@ endif()
 add_compile_options(-fsanitize=address)
 add_link_options(-fsanitize=address)
 
+add_subdirectory(vendor)
 include_directories(${CMAKE_SOURCE_DIR}/GCToolkit/include)
 add_subdirectory(GCToolkit)
+add_subdirectory(test)
 add_subdirectory(tools)
 
 
