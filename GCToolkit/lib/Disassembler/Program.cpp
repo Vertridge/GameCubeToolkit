@@ -141,7 +141,8 @@ void PowerPC::ParseInstructionToFunctions(Program &program) {
       if (instr->GetOpcode() != PPC_INS_BL) {
         continue;
       }
-      auto *branchInstr = static_cast<BranchInstruction *>(instr.get());
+
+      auto branchInstr = std::static_pointer_cast<BranchInstruction>(instr);
 
       auto branchAddr = branchInstr->GetCallAddress();
       auto *funcSect = program.GetTextSectionWithAddress(branchAddr);
@@ -160,6 +161,7 @@ void PowerPC::ParseInstructionToFunctions(Program &program) {
 
       funcSect->AddFunction(branchAddr, func);
       branchInstr->SetCallFunction(func);
+      func->AddCallee(branchInstr);
     }
   }
 

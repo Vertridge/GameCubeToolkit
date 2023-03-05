@@ -95,12 +95,20 @@ public:
     return mInstructions.end();
   }
 
+  std::vector<std::weak_ptr<BranchInstruction>> &GetCallees() {
+    return mCallees;
+  }
+  void AddCallee(std::weak_ptr<BranchInstruction> callee) {
+    mCallees.push_back(callee);
+  }
+
   void Dump(std::ostream &os) const;
 
 private:
   std::string mName;
   std::uint32_t mAddress;
   std::vector<std::shared_ptr<Instruction>> mInstructions;
+  std::vector<std::weak_ptr<BranchInstruction>> mCallees;
 };
 
 class TextSection {
