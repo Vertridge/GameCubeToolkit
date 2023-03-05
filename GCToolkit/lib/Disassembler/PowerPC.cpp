@@ -117,11 +117,24 @@ void Disassembler::PrintInstruction(cs_insn *ins, std::ostream &os,
   os << "\n";
 }
 
-std::shared_ptr<Function> CreateFunction(std::uint32_t address) {
-  std::stringstream stream;
-  stream << "function_0x" << std::hex << address;
+std::optional<std::shared_ptr<BranchInstruction>>
+CreateBranchInstruction(std::uint32_t address, std::string name,
+                        const cs_insn &insn) {
+  if (insn.detail == NULL) {
+    return std::nullopt;
+  }
+  cs_ppc *ppc = &(insn.detail->ppc);
+  for (auto i = 0; i < ppc->op_count; i++) {
+    auto *op = &(ppc->operands[i]);
+    if ((int)op->type != PPC_OP_IMM) {
+      continue;
+    }
 
-  return std::make_shared<Function>(stream.str(), address);
+    std::uint32_t funcAddr = static_cast<std::uint32_t>(op->imm);
+    return std::make_shared<BranchInstruction>(
+        std::move(name), address, static_cast<ppc_insn>(insn.id), funcAddr);
+  }
+  return std::nullopt;
 }
 
 TextSection Disassembler::DisassembleSection(std::uint32_t offset,
@@ -165,28 +178,14 @@ TextSection Disassembler::DisassembleSection(std::uint32_t offset,
       std::stringstream instr;
       instr << "\t" << insn[j].mnemonic << "\t" << insn[j].op_str;
 
-      instructions.emplace_back(
-          std::make_shared<Instruction>(instr.str(), addr));
       if (insn[j].id == PPC_INS_BL) {
-        if (insn->detail == NULL) {
-          continue;
+        auto branch = CreateBranchInstruction(addr, instr.str(), insn[j]);
+        if (branch.has_value()) {
+          instructions.push_back(*branch);
         }
-        cs_ppc *ppc = &(insn->detail->ppc);
-        for (auto i = 0; i < ppc->op_count; i++) {
-          auto *op = &(ppc->operands[i]);
-          if ((int)op->type != PPC_OP_IMM) {
-            continue;
-          }
-
-          std::uint32_t funcAddr = static_cast<std::uint32_t>(op->imm);
-          if (textSection.HasFunctionAt(funcAddr) ||
-              !textSection.AddressInSection(funcAddr)) {
-            continue;
-          }
-
-          auto func = CreateFunction(funcAddr);
-          textSection.AddFunction(funcAddr, std::move(func));
-        }
+      } else {
+        instructions.emplace_back(std::make_shared<Instruction>(
+            instr.str(), addr, static_cast<ppc_insn>(insn[j].id)));
       }
     }
     cs_free(insn, count);
@@ -207,6 +206,7 @@ Program Disassembler::DisassemblePPC(Parsing::DOLFile &dol, std::ostream &os) {
 
   Program program;
   program.SetName(dol.GetFileName());
+  program.SetEntryPoint(dol.GetHeader()->EntryPointAddress);
 
   cs_option(handle, CS_OPT_DETAIL, CS_OPT_ON);
 
@@ -221,23 +221,13 @@ Program Disassembler::DisassemblePPC(Parsing::DOLFile &dol, std::ostream &os) {
         dol.GetHeader()->TextSectionAddresses[i],
         dol.GetHeader()->TextSectionSizes[i], dol.GetData(), os);
     textSection.SetName("TextSection_" + std::to_string(i));
-    ParseInstructionToFunctions(textSection);
+    // ParseInstructionToFunctions(textSection);
     program.AddTextSection(std::move(textSection));
   }
 
   cs_close(&handle);
 
-  return program;
-}
+  ParseInstructionToFunctions(program);
 
-void PowerPC::ParseInstructionToFunctions(TextSection &section) {
-  auto &instructions = section.GetInstructions();
-  std::shared_ptr<Function> &tempfunction = section.begin()->second;
-  for (auto &instr : instructions) {
-    if (section.HasFunctionAt(instr->GetAddress())) {
-      tempfunction = section.GetFunction(instr->GetAddress());
-    }
-    instr->SetParent(tempfunction);
-    tempfunction->Add(instr);
-  }
+  return program;
 }

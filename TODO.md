@@ -2,9 +2,9 @@
 
 ### Soonish
 
-[ ] Function parsing cross sections
+[X] Function parsing cross sections
 [ ] Label parsing
-[ ] Link functions with callers => Callgraph
+[X] Link functions with callers => Callgraph
 
 ### Future
 

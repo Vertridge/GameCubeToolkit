@@ -7,18 +7,23 @@
 #include <string>
 #include <vector>
 
+#include <capstone/ppc.h>
+
 namespace PowerPC {
 
 class Function;
+class Program;
 
 class Instruction {
 public:
-  Instruction(std::string name, std::uint32_t address);
+  Instruction(std::string name, std::uint32_t address, ppc_insn opcode);
   Instruction(Instruction &) = delete;
   Instruction(Instruction &&) = delete;
 
   Instruction &operator=(Instruction &) = delete;
   Instruction &operator=(Instruction &&) = delete;
+
+  virtual ~Instruction() = default;
 
   std::string_view GetName() { return mName; }
   std::uint32_t GetAddress() { return mAddress; }
@@ -29,12 +34,43 @@ public:
   }
   bool HasParent() { return !mFunction.expired(); }
 
-  void Dump(std::ostream &os) const;
+  ppc_insn GetOpcode() { return mOpcode; }
+
+  virtual void Dump(std::ostream &os) const;
 
 private:
   std::string mName;
   std::uint32_t mAddress;
   std::weak_ptr<Function> mFunction;
+
+  ppc_insn mOpcode;
+};
+
+class BranchInstruction : public Instruction {
+public:
+  BranchInstruction(std::string name, std::uint32_t address, ppc_insn opcode);
+  BranchInstruction(std::string name, std::uint32_t address, ppc_insn opcode,
+                    std::uint32_t callAddress);
+  BranchInstruction(Instruction &) = delete;
+  BranchInstruction(Instruction &&) = delete;
+
+  ~BranchInstruction() = default;
+
+  BranchInstruction &operator=(BranchInstruction &) = delete;
+  BranchInstruction &operator=(BranchInstruction &&) = delete;
+
+  std::uint32_t GetCallAddress() { return mCallAddress; }
+  void SetCallAddress(std::uint32_t address) { mCallAddress = address; }
+  std::weak_ptr<Function> GetCallFunction() { return mCallFunction; }
+  void SetCallFunction(std::weak_ptr<Function> function) {
+    mCallFunction = function;
+  }
+
+  void Dump(std::ostream &os) const override;
+
+private:
+  std::uint32_t mCallAddress = 0;
+  std::weak_ptr<Function> mCallFunction;
 };
 
 class Function {
@@ -100,7 +136,10 @@ public:
     return mInstructions;
   }
 
-  bool AddressInSection(std::uint32_t address);
+  bool AddressInSection(std::uint32_t address) const;
+
+  void SetParent(Program *program) { mParent = program; }
+  Program *GetParent() { return mParent; }
 
   void Dump(std::ostream &os) const;
   void DumpInstructions(std::ostream &os) const;
@@ -110,6 +149,8 @@ private:
   std::uint32_t mOffset = 0;
   std::uint32_t mAddress = 0;
   std::uint32_t mSize = 0;
+
+  Program *mParent = nullptr;
 
   std::map<std::uint32_t, std::shared_ptr<Function>> mFunctions;
   std::vector<std::shared_ptr<Instruction>> mInstructions;
@@ -137,18 +178,25 @@ public:
   void AddDataSection(DataSection section);
   TextSection &GetTextSection(std::size_t i);
   DataSection &GetDataSection(std::size_t i);
+  std::vector<TextSection> &GetTextSections() { return mTextSections; }
 
   void SetName(std::string name) { mName = name; }
   std::string_view GetName() { return mName; }
 
+  void SetEntryPoint(std::uint32_t entryPoint) { mEntryPoint = entryPoint; };
+  std::uint32_t GetEntryPoint() { return mEntryPoint; }
+
   void Dump(std::ostream &os) const;
+
+  TextSection *GetTextSectionWithAddress(std::uint32_t address);
 
 private:
   std::vector<TextSection> mTextSections;
   std::vector<DataSection> mDataSections;
   std::string mName;
+  std::uint32_t mEntryPoint = 0;
 };
 
-void ParseInstructionToFunctions(TextSection &section);
+void ParseInstructionToFunctions(Program &program);
 
 } // namespace PowerPC
