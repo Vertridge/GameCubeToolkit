@@ -129,15 +129,17 @@ void DOLFile::PrintHeader(std::ostream &os) {
               << " " << std::dec << mHeader->Padding[i] << "\n";
   }
   os << std::endl;
+  // clang-format on
 }
 
-void DOLFile::PrintData(std::ostream& os, std::size_t begin, std::size_t size) {
-  if(size == 0) {
-    size = mDataBuffer.size() - begin; 
+void DOLFile::PrintData(std::ostream &os, std::size_t begin, std::size_t size) {
+  if (size == 0) {
+    size = mDataBuffer.size() - begin;
   }
-  
-  for(auto i = begin; i < (begin + size); ++i) {
-    os << std::setw(2) << std::setfill('0') << std::hex << (int)(mDataBuffer[i] & 0xff) << " ";
+
+  for (auto i = begin; i < (begin + size); ++i) {
+    os << std::setw(2) << std::setfill('0') << std::hex
+       << (int)(mDataBuffer[i] & 0xff) << " ";
   }
   os << std::endl;
 }

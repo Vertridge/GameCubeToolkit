@@ -42,7 +42,7 @@ public:
   std::vector<std::uint8_t> &GetData() { return mDataBuffer; }
   const std::vector<std::uint8_t> &GetData() const { return mDataBuffer; }
 
-  std::string GetFileName() const { return mFileName; }
+  const std::string &GetFileName() const { return mFileName; }
 
 private:
   DOLHeader *mHeader;

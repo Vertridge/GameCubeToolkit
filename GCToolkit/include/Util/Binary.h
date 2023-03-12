@@ -31,4 +31,11 @@ void SwapBinary(std::uint32_t &value) {
   value = (tmp << 16) | (tmp >> 16);
 }
 
+/// Swaps the endiness of 16bit int.
+void SwapBinary(std::uint16_t &value) {
+  value = (value << 8) | (value >> 8);
+  // std::uint16_t tmp = ((value << 8) & 0xFF00) | ((value >> 8) & 0x00FF);
+  // value = (tmp << 16) | (tmp >> 16);
+}
+
 } // namespace util

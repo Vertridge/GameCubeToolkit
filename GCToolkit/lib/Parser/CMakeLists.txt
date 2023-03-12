@@ -1,1 +1,1 @@
-add_library(Parser DOL.cpp)
+add_library(Parser DOL.cpp GCM.cpp)

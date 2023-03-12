@@ -15,7 +15,7 @@ int main(int argc, char *argv[]) {
 
   Parsing::DOLFile dol;
   if (!dol.Parse(argv[1])) {
-    std::cerr << "Failed to open:" << argv[1] << std::endl;
+    std::cerr << "Failed to open: " << argv[1] << std::endl;
     return 1;
   }
 
