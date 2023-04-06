@@ -19,7 +19,7 @@ int main(int argc, char *argv[]) {
     return 1;
   }
 
-  std::string output = "gcmDunp.txt";
+  std::string output = "gcmDump.txt";
   if (argc >= 3) {
     output = argv[2];
   }
@@ -29,4 +29,18 @@ int main(int argc, char *argv[]) {
   gcm.PrintBootHeader(ofstrm);
   gcm.PrintDiskHeader(ofstrm);
   gcm.PrintAppLoaderHeader(ofstrm);
+
+  ofstrm.close();
+
+  std::ofstream bootofstrm(Parsing::BootFileName, std::ios::binary);
+  gcm.WriteBootHeader(bootofstrm);
+  bootofstrm.close();
+
+  std::ofstream diskofstrm(Parsing::DiskFileName, std::ios::binary);
+  gcm.WriteDiskHeader(diskofstrm);
+  diskofstrm.close();
+
+  std::ofstream applofstrm(Parsing::AppLoaderFileName, std::ios::binary);
+  gcm.WriteAppLoaderHeader(applofstrm);
+  applofstrm.close();
 }

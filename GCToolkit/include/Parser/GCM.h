@@ -4,9 +4,14 @@
 #include <istream>
 #include <vector>
 
+#include "Util/MemoryMap.h"
+
 namespace Parsing {
 
-constexpr auto HeaderName = "boot.bin";
+constexpr auto BootFileName = "boot.bin";
+constexpr auto DiskFileName = "bi2.bin";
+constexpr auto AppLoaderFileName = "apploader.bin";
+
 constexpr auto ExpectedDVDMagic = 0xc2339f3d;
 constexpr auto GameNameSize = 0x03e0;
 constexpr auto Padding1Size = 18;
@@ -81,28 +86,33 @@ class GCMFile {
 public:
   GCMFile() = default;
   GCMFile(std::string file);
+  ~GCMFile();
 
   bool Parse(std::string file);
   bool Parse(std::istream &stream);
 
-  bool ParseBootHeader(std::istream &stream);
+  bool ParseBootHeader();
   void PrintBootHeader(std::ostream &os);
-  bool ParseDiskHeader(std::istream &stream);
-  void PrintDiskHeader(std::ostream &os);
-  bool ParseAppLoaderHeader(std::istream &stream);
+  void WriteBootHeader(std::ostream &os);
+  bool ParseDiskHeader();
+  void PrintDiskHeader(std::ostream &os, bool printData = false);
+  void WriteDiskHeader(std::ostream &os);
+  bool ParseAppLoaderHeader();
   void PrintAppLoaderHeader(std::ostream &os);
+  void WriteAppLoaderHeader(std::ostream &os);
 
   std::string_view GetFileName() { return mFileName; }
 
 private:
   BootHeader *mBootHeader;
-  std::vector<std::uint8_t> mBootHeaderBuffer;
   DiskHeaderInformation *mDiskHeaderInfo;
-  std::vector<std::uint8_t> mDiskHeaderInfoBuffer;
   AppLoaderHeader *mAppLoaderHeader;
-  std::vector<std::uint8_t> mAppLoaderHeaderBuffer;
+
+  std::vector<std::uint8_t> mFileBuffer;
 
   std::string mFileName;
+
+  util::MmapMem mMem;
 };
 
 } // namespace Parsing

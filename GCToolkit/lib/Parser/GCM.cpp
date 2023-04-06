@@ -7,10 +7,13 @@
 #include <fstream>
 #include <iomanip>
 #include <iostream>
+#include <iterator>
 
 using namespace Parsing;
 
 GCMFile::GCMFile(std::string file) { Parse(file); }
+
+GCMFile::~GCMFile() { util::MunMap(mMem); }
 
 bool GCMFile::Parse(std::istream &stream) {
   if (stream.peek() == EOF) {
@@ -19,9 +22,13 @@ bool GCMFile::Parse(std::istream &stream) {
     return false;
   }
   std::cerr << "Parsing header" << std::endl;
-  ParseBootHeader(stream);
-  ParseDiskHeader(stream);
-  ParseAppLoaderHeader(stream);
+
+  std::istream_iterator<std::uint8_t> start(stream);
+  mFileBuffer = std::vector<std::uint8_t>(start, {});
+
+  ParseBootHeader();
+  ParseDiskHeader();
+  ParseAppLoaderHeader();
 
   return true;
 }
@@ -29,20 +36,23 @@ bool GCMFile::Parse(std::istream &stream) {
 bool GCMFile::Parse(std::string file) {
   mFileName = file;
   std::cout << "Parsing File: " << mFileName << std::endl;
-  std::ifstream input(file.c_str(), std::ios::binary);
-  if (!input.is_open()) {
-    std::cerr << "Failed to open: " << mFileName << " " << std::strerror(errno)
-              << std::endl;
-    return false;
-  }
-  return Parse(input);
+
+  auto memMap = util::MmapFile(file);
+
+  mFileBuffer.resize(memMap.Len);
+  mFileBuffer.assign(reinterpret_cast<std::uint8_t *>(memMap.Addr),
+                     reinterpret_cast<std::uint8_t *>(memMap.Addr) +
+                         memMap.Len);
+
+  ParseBootHeader();
+  ParseDiskHeader();
+  ParseAppLoaderHeader();
+
+  return true;
 }
 
-bool GCMFile::ParseBootHeader(std::istream &stream) {
-  mBootHeaderBuffer.resize(sizeof(BootHeader));
-  stream.read(reinterpret_cast<char *>(mBootHeaderBuffer.data()),
-              mBootHeaderBuffer.size());
-  mBootHeader = reinterpret_cast<BootHeader *>(mBootHeaderBuffer.data());
+bool GCMFile::ParseBootHeader() {
+  mBootHeader = reinterpret_cast<BootHeader *>(mFileBuffer.data());
 
   // Swap endiness.
   util::SwapBinary(mBootHeader->GameCode);
@@ -72,12 +82,10 @@ bool GCMFile::ParseBootHeader(std::istream &stream) {
   return true;
 }
 
-bool GCMFile::ParseDiskHeader(std::istream &stream) {
-  mDiskHeaderInfoBuffer.resize(sizeof(DiskHeaderInformation));
-  stream.read(reinterpret_cast<char *>(mDiskHeaderInfoBuffer.data()),
-              mDiskHeaderInfoBuffer.size());
+bool GCMFile::ParseDiskHeader() {
+  const std::size_t offset = sizeof(BootHeader);
   mDiskHeaderInfo =
-      reinterpret_cast<DiskHeaderInformation *>(mDiskHeaderInfoBuffer.data());
+      reinterpret_cast<DiskHeaderInformation *>(mFileBuffer.data() + offset);
 
   util::SwapBinary(mDiskHeaderInfo->DebugMonitorSize);
   util::SwapBinary(mDiskHeaderInfo->SimulatedMemorySize);
@@ -90,18 +98,29 @@ bool GCMFile::ParseDiskHeader(std::istream &stream) {
   return true;
 }
 
-bool GCMFile::ParseAppLoaderHeader(std::istream &stream) {
-  mAppLoaderHeaderBuffer.resize(sizeof(AppLoaderHeader));
-  stream.read(reinterpret_cast<char *>(mAppLoaderHeaderBuffer.data()),
-              mAppLoaderHeaderBuffer.size());
+bool GCMFile::ParseAppLoaderHeader() {
+  const std::size_t offset = sizeof(BootHeader) + sizeof(DiskHeaderInformation);
   mAppLoaderHeader =
-      reinterpret_cast<AppLoaderHeader *>(mAppLoaderHeaderBuffer.data());
+      reinterpret_cast<AppLoaderHeader *>(mFileBuffer.data() + offset);
 
   util::SwapBinary(mAppLoaderHeader->AppLoaderEntryPoint);
   util::SwapBinary(mAppLoaderHeader->AppLoaderSize);
   util::SwapBinary(mAppLoaderHeader->TrailerSize);
 
   return true;
+}
+
+void GCMFile::WriteBootHeader(std::ostream &os) {
+  os.write(reinterpret_cast<char *>(mBootHeader), sizeof(BootHeader));
+}
+
+void GCMFile::WriteDiskHeader(std::ostream &os) {
+  os.write(reinterpret_cast<char *>(mDiskHeaderInfo),
+           sizeof(DiskHeaderInformation));
+}
+
+void GCMFile::WriteAppLoaderHeader(std::ostream &os) {
+  os.write(reinterpret_cast<char *>(mAppLoaderHeader), sizeof(AppLoaderHeader));
 }
 
 void GCMFile::PrintBootHeader(std::ostream &os) {
@@ -171,7 +190,7 @@ void GCMFile::PrintBootHeader(std::ostream &os) {
   // clang-format on
 }
 
-void GCMFile::PrintDiskHeader(std::ostream &os) {
+void GCMFile::PrintDiskHeader(std::ostream &os, bool printData) {
   os << "bi2.bin 0x" << std::hex << sizeof(DiskHeaderInformation) << " :\n";
 
   // clang-format off
@@ -190,15 +209,17 @@ void GCMFile::PrintDiskHeader(std::ostream &os) {
   }
   os << "\n";
 
-  // for(auto i = 0; i < DiskHeaderInfoDataSize; ++i) {
-  //   os << mDiskHeaderInfo->Data[i] << " ";
-  // }
-  // os << "\n";
+  if(printData) {
+    for(auto i = 0; i < DiskHeaderInfoDataSize; ++i) {
+      os << mDiskHeaderInfo->Data[i];
+    }
+  }
+  os << "\n";
   // clang-format on
 }
 
 void GCMFile::PrintAppLoaderHeader(std::ostream &os) {
-  os << "appldr.bin 0x" << std::hex << sizeof(AppLoaderHeader) << "\n";
+  os << "apploader.bin 0x" << std::hex << sizeof(AppLoaderHeader) << "\n";
 
   // clang-format off
   os << "Date: ";
