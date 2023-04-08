@@ -10,7 +10,9 @@ namespace Parsing {
 
 constexpr auto BootFileName = "boot.bin";
 constexpr auto DiskFileName = "bi2.bin";
-constexpr auto AppLoaderFileName = "apploader.bin";
+constexpr auto AppLoaderFileName = "appldr.bin";
+constexpr auto DolFileName = "main.dol";
+constexpr auto FSTFileName = "fst.bin";
 
 constexpr auto ExpectedDVDMagic = 0xc2339f3d;
 constexpr auto GameNameSize = 0x03e0;
@@ -100,8 +102,14 @@ public:
   bool ParseAppLoaderHeader();
   void PrintAppLoaderHeader(std::ostream &os);
   void WriteAppLoaderHeader(std::ostream &os);
+  void WriteDolFile(std::ostream &os);
+  void WriteFSTFile(std::ostream &os);
 
   std::string_view GetFileName() { return mFileName; }
+
+  const BootHeader *GetBootHeader() const { return mBootHeader; }
+  const std::vector<std::uint8_t> &GetFileBuffer() const { return mFileBuffer; }
+  std::vector<std::uint8_t> &GetFileBuffer() { return mFileBuffer; }
 
 private:
   BootHeader *mBootHeader;

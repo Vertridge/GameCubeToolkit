@@ -119,6 +119,29 @@ void GCMFile::WriteDiskHeader(std::ostream &os) {
            sizeof(DiskHeaderInformation));
 }
 
+void GCMFile::WriteDolFile(std::ostream &os) {
+  if (mBootHeader == nullptr) {
+    std::cerr << "Cannot write dol file, boot header has to be parsed"
+              << std::endl;
+    return;
+  }
+  auto dolOffset = mBootHeader->BootFileOffset;
+  // Dol file does not have an end, but ends when the FST file starts.
+  auto dolLen = mBootHeader->FSTOffset - dolOffset;
+  auto dolAddr = mFileBuffer.data() + dolOffset;
+  os.write(reinterpret_cast<char *>(dolAddr), dolLen);
+}
+
+void GCMFile::WriteFSTFile(std::ostream &os) {
+  if (mBootHeader == nullptr) {
+    std::cerr << "Cannot write FST file, boot header has to be parsed"
+              << std::endl;
+    return;
+  }
+  auto fst = mFileBuffer.data() + mBootHeader->FSTOffset;
+  os.write(reinterpret_cast<char *>(fst), mBootHeader->FSTSize);
+}
+
 void GCMFile::WriteAppLoaderHeader(std::ostream &os) {
   os.write(reinterpret_cast<char *>(mAppLoaderHeader), sizeof(AppLoaderHeader));
 }
@@ -219,7 +242,7 @@ void GCMFile::PrintDiskHeader(std::ostream &os, bool printData) {
 }
 
 void GCMFile::PrintAppLoaderHeader(std::ostream &os) {
-  os << "apploader.bin 0x" << std::hex << sizeof(AppLoaderHeader) << "\n";
+  os << "appldr.bin 0x" << std::hex << sizeof(AppLoaderHeader) << "\n";
 
   // clang-format off
   os << "Date: ";
