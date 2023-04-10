@@ -49,11 +49,14 @@ else()
   set(CMAKE_CXX_FLAGS_RELEASE "-O3")
 endif()
 
-
+find_package(glfw3 REQUIRED)
+find_package(OpenGL REQUIRED)
 
 add_subdirectory(vendor)
 include_directories(${CMAKE_SOURCE_DIR}/GCToolkit/include)
 add_subdirectory(GCToolkit)
+include_directories(${CMAKE_SOURCE_DIR}/GUILib/include)
+add_subdirectory(GUILib)
 add_subdirectory(test)
 add_subdirectory(tools)
 
