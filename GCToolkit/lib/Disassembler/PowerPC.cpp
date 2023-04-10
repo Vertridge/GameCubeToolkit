@@ -9,12 +9,9 @@
 
 using namespace PowerPC;
 
-constexpr std::array<ppc_insn, 6> BranchInstructions = {
-    PPC_INS_B, PPC_INS_BL, PPC_INS_BC, PPC_INS_BDZ, PPC_INS_BDNZ};
-
 static csh handle;
 
-static const char *get_bc_name(int bc) {
+const char *get_bc_name(int bc) {
   switch (bc) {
   default:
   case PPC_BC_INVALID:
@@ -117,6 +114,26 @@ void Disassembler::PrintInstruction(cs_insn *ins, std::ostream &os,
   os << "\n";
 }
 
+std::optional<std::shared_ptr<CallInstruction>>
+CreateCallInstruction(std::uint32_t address, std::string name,
+                      const cs_insn &insn) {
+  if (insn.detail == NULL) {
+    return std::nullopt;
+  }
+  cs_ppc *ppc = &(insn.detail->ppc);
+  for (auto i = 0; i < ppc->op_count; i++) {
+    auto *op = &(ppc->operands[i]);
+    if ((int)op->type != PPC_OP_IMM) {
+      continue;
+    }
+
+    std::uint32_t funcAddr = static_cast<std::uint32_t>(op->imm);
+    return std::make_shared<CallInstruction>(
+        std::move(name), address, static_cast<ppc_insn>(insn.id), funcAddr);
+  }
+  return std::nullopt;
+}
+
 std::optional<std::shared_ptr<BranchInstruction>>
 CreateBranchInstruction(std::uint32_t address, std::string name,
                         const cs_insn &insn) {
@@ -130,9 +147,9 @@ CreateBranchInstruction(std::uint32_t address, std::string name,
       continue;
     }
 
-    std::uint32_t funcAddr = static_cast<std::uint32_t>(op->imm);
+    std::uint32_t blockAddr = static_cast<std::uint32_t>(op->imm);
     return std::make_shared<BranchInstruction>(
-        std::move(name), address, static_cast<ppc_insn>(insn.id), funcAddr);
+        std::move(name), address, static_cast<ppc_insn>(insn.id), blockAddr);
   }
   return std::nullopt;
 }
@@ -178,7 +195,12 @@ TextSection Disassembler::DisassembleSection(std::uint32_t offset,
       std::stringstream instr;
       instr << "\t" << insn[j].mnemonic << "\t" << insn[j].op_str;
 
-      if (insn[j].id == PPC_INS_BL) {
+      if (IsCallInstruction(static_cast<ppc_insn>(insn[j].id))) {
+        auto call = CreateCallInstruction(addr, instr.str(), insn[j]);
+        if (call.has_value()) {
+          instructions.push_back(*call);
+        }
+      } else if (IsBranchInstruction(static_cast<ppc_insn>(insn[j].id))) {
         auto branch = CreateBranchInstruction(addr, instr.str(), insn[j]);
         if (branch.has_value()) {
           instructions.push_back(*branch);
@@ -221,7 +243,7 @@ Program Disassembler::DisassemblePPC(Parsing::DOLFile &dol, std::ostream &os) {
         dol.GetHeader()->TextSectionAddresses[i],
         dol.GetHeader()->TextSectionSizes[i], dol.GetData(), os);
     textSection.SetName("TextSection_" + std::to_string(i));
-    // ParseInstructionToFunctions(textSection);
+
     program.AddTextSection(std::move(textSection));
   }
 

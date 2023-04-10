@@ -1,5 +1,6 @@
 #pragma once
 
+#include <algorithm>
 #include <cassert>
 #include <map>
 #include <memory>
@@ -13,6 +14,12 @@ namespace PowerPC {
 
 class Function;
 class Program;
+class Block;
+
+constexpr std::array<ppc_insn, 5> BranchInstructions = {
+    PPC_INS_B, PPC_INS_BC, PPC_INS_BDZ, PPC_INS_BDNZ};
+
+constexpr std::array<ppc_insn, 1> CallInstructions = {PPC_INS_BL};
 
 class Instruction {
 public:
@@ -27,12 +34,16 @@ public:
 
   std::string_view GetName() { return mName; }
   std::uint32_t GetAddress() { return mAddress; }
-  std::weak_ptr<Function> GetParent() { return mFunction; }
-  void SetParent(std::weak_ptr<Function> parent) {
+  std::weak_ptr<Function> GetFunction() { return mFunction; }
+  void SetFunction(std::weak_ptr<Function> parent) {
     assert(mFunction.expired() && "Parent already set.");
     mFunction = parent;
   }
-  bool HasParent() { return !mFunction.expired(); }
+  bool HasFunction() { return !mFunction.expired(); }
+
+  std::weak_ptr<Block> GetParent() { return mBlock; }
+  void SetParent(std::weak_ptr<Block> parent) { mBlock = parent; }
+  bool HasParent() { return !mBlock.expired(); }
 
   ppc_insn GetOpcode() { return mOpcode; }
 
@@ -42,22 +53,23 @@ private:
   std::string mName;
   std::uint32_t mAddress;
   std::weak_ptr<Function> mFunction;
+  std::weak_ptr<Block> mBlock;
 
   ppc_insn mOpcode;
 };
 
-class BranchInstruction : public Instruction {
+class CallInstruction : public Instruction {
 public:
-  BranchInstruction(std::string name, std::uint32_t address, ppc_insn opcode);
-  BranchInstruction(std::string name, std::uint32_t address, ppc_insn opcode,
-                    std::uint32_t callAddress);
-  BranchInstruction(Instruction &) = delete;
-  BranchInstruction(Instruction &&) = delete;
+  CallInstruction(std::string name, std::uint32_t address, ppc_insn opcode);
+  CallInstruction(std::string name, std::uint32_t address, ppc_insn opcode,
+                  std::uint32_t callAddress);
+  CallInstruction(Instruction &) = delete;
+  CallInstruction(Instruction &&) = delete;
 
-  ~BranchInstruction() = default;
+  ~CallInstruction() = default;
 
-  BranchInstruction &operator=(BranchInstruction &) = delete;
-  BranchInstruction &operator=(BranchInstruction &&) = delete;
+  CallInstruction &operator=(CallInstruction &) = delete;
+  CallInstruction &operator=(CallInstruction &&) = delete;
 
   std::uint32_t GetCallAddress() { return mCallAddress; }
   void SetCallAddress(std::uint32_t address) { mCallAddress = address; }
@@ -71,6 +83,74 @@ public:
 private:
   std::uint32_t mCallAddress = 0;
   std::weak_ptr<Function> mCallFunction;
+};
+
+class BranchInstruction : public Instruction {
+public:
+  BranchInstruction(std::string name, std::uint32_t address, ppc_insn opcode);
+  BranchInstruction(std::string name, std::uint32_t address, ppc_insn opcode,
+                    std::uint32_t branchAddress);
+  BranchInstruction(Instruction &) = delete;
+  BranchInstruction(Instruction &&) = delete;
+
+  ~BranchInstruction() = default;
+
+  BranchInstruction &operator=(BranchInstruction &) = delete;
+  BranchInstruction &operator=(BranchInstruction &&) = delete;
+
+  std::uint32_t GetBranchAddress() { return mBranchAddress; }
+  void SetBranchAddress(std::uint32_t address) { mBranchAddress = address; }
+  std::weak_ptr<Block> GetBranchBlock() { return mBranchBlock; }
+  void SetBranchBlock(std::weak_ptr<Block> block) { mBranchBlock = block; }
+
+  void Dump(std::ostream &os) const override;
+
+private:
+  std::uint32_t mBranchAddress = 0;
+  std::weak_ptr<Block> mBranchBlock;
+};
+
+class Block {
+public:
+  Block(std::string name, std::uint32_t address);
+  Block(Block &) = delete;
+  Block(Block &&) = delete;
+
+  Block &operator=(Block &) = delete;
+  Block &operator=(Block &&) = delete;
+
+  std::uint32_t GetAddress() { return mAddress; }
+  std::string_view GetName() { return mName; }
+
+  void Add(std::shared_ptr<Instruction> &instr) {
+    mInstructions.push_back(instr);
+  }
+
+  std::vector<std::shared_ptr<Instruction>>::iterator begin() {
+    return mInstructions.begin();
+  }
+  std::vector<std::shared_ptr<Instruction>>::iterator end() {
+    return mInstructions.end();
+  }
+
+  std::vector<std::weak_ptr<BranchInstruction>> &GetBranchees() {
+    return mBranchees;
+  }
+  void AddBranchee(std::weak_ptr<BranchInstruction> branchee) {
+    mBranchees.push_back(branchee);
+  }
+
+  void Dump(std::ostream &os) const;
+
+  std::weak_ptr<Function> GetParent() { return mParent; }
+  void SetParent(std::weak_ptr<Function> parent) { mParent = parent; }
+
+private:
+  std::string mName;
+  std::uint32_t mAddress;
+  std::vector<std::shared_ptr<Instruction>> mInstructions;
+  std::vector<std::weak_ptr<BranchInstruction>> mBranchees;
+  std::weak_ptr<Function> mParent;
 };
 
 class Function {
@@ -88,27 +168,29 @@ public:
   void Add(std::shared_ptr<Instruction> &instr) {
     mInstructions.push_back(instr);
   }
-  std::vector<std::shared_ptr<Instruction>>::iterator begin() {
+  std::vector<std::shared_ptr<Instruction>>::iterator begin_instr() {
     return mInstructions.begin();
   }
-  std::vector<std::shared_ptr<Instruction>>::iterator end() {
+  std::vector<std::shared_ptr<Instruction>>::iterator end_instr() {
     return mInstructions.end();
   }
 
-  std::vector<std::weak_ptr<BranchInstruction>> &GetCallees() {
-    return mCallees;
-  }
-  void AddCallee(std::weak_ptr<BranchInstruction> callee) {
+  std::vector<std::weak_ptr<CallInstruction>> &GetCallees() { return mCallees; }
+  void AddCallee(std::weak_ptr<CallInstruction> callee) {
     mCallees.push_back(callee);
   }
 
+  void Add(std::shared_ptr<Block> &block) { mBlocks.push_back(block); }
+
   void Dump(std::ostream &os) const;
+  void DunpInstructions(std::ostream &os) const;
 
 private:
   std::string mName;
   std::uint32_t mAddress;
   std::vector<std::shared_ptr<Instruction>> mInstructions;
-  std::vector<std::weak_ptr<BranchInstruction>> mCallees;
+  std::vector<std::shared_ptr<Block>> mBlocks;
+  std::vector<std::weak_ptr<CallInstruction>> mCallees;
 };
 
 class TextSection {
@@ -205,6 +287,17 @@ private:
   std::uint32_t mEntryPoint = 0;
 };
 
+inline bool IsBranchInstruction(ppc_insn instr) {
+  return std::find(BranchInstructions.begin(), BranchInstructions.end(),
+                   instr) != BranchInstructions.end();
+}
+
+inline bool IsCallInstruction(ppc_insn instr) {
+  return std::find(CallInstructions.begin(), CallInstructions.end(), instr) !=
+         CallInstructions.end();
+}
+
 void ParseInstructionToFunctions(Program &program);
+void ParseInBlocks(std::shared_ptr<Function> &function);
 
 } // namespace PowerPC

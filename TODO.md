@@ -3,13 +3,14 @@
 ### Soonish
 
 [X] Function parsing cross sections
-[ ] Label parsing
 [X] Link functions with callers => Callgraph
 [X] GCM Unpacker
-
+[X] Basic block parsing
+  [ ] Support all branch instructions for BB parsing
+  [ ] Link branchInstr back to the BB they branch to
 ### Future
 
-[ ] Basic block parsing
+[ ] GUI visualiser
 
 ### Bugs
 

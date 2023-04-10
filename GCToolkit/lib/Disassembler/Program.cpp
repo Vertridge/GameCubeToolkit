@@ -15,16 +15,15 @@ void Instruction::Dump(std::ostream &os) const {
   os << "0x" << std::hex << mAddress << "\t" << mName << "\n";
 }
 
-BranchInstruction::BranchInstruction(std::string name, std::uint32_t address,
-                                     ppc_insn opcode)
+CallInstruction::CallInstruction(std::string name, std::uint32_t address,
+                                 ppc_insn opcode)
     : Instruction(name, address, opcode) {}
 
-BranchInstruction::BranchInstruction(std::string name, std::uint32_t address,
-                                     ppc_insn opcode, std::uint32_t callAddress)
+CallInstruction::CallInstruction(std::string name, std::uint32_t address,
+                                 ppc_insn opcode, std::uint32_t callAddress)
     : Instruction(name, address, opcode), mCallAddress(callAddress) {}
 
-void BranchInstruction::Dump(std::ostream &os) const {
-  auto callFunction = mCallFunction.lock();
+void CallInstruction::Dump(std::ostream &os) const {
   if (mCallFunction.expired()) {
     Instruction::Dump(os);
     return;
@@ -35,13 +34,55 @@ void BranchInstruction::Dump(std::ostream &os) const {
   if (string.back() == '\n') {
     string.pop_back();
   }
-  os << string << "\t" << mCallFunction.lock()->GetName() << "\n";
+  auto callFunction = mCallFunction.lock();
+  os << string << "\t" << callFunction->GetName() << "\n";
+}
+
+BranchInstruction::BranchInstruction(std::string name, std::uint32_t address,
+                                     ppc_insn opcode)
+    : Instruction(name, address, opcode) {}
+
+BranchInstruction::BranchInstruction(std::string name, std::uint32_t address,
+                                     ppc_insn opcode,
+                                     std::uint32_t branchAddress)
+    : Instruction(name, address, opcode), mBranchAddress(branchAddress) {}
+
+void BranchInstruction::Dump(std::ostream &os) const {
+  if (mBranchBlock.expired()) {
+    Instruction::Dump(os);
+    return;
+  }
+  std::stringstream stream;
+  Instruction::Dump(stream);
+  auto string = stream.str();
+  if (string.back() == '\n') {
+    string.pop_back();
+  }
+  auto branchBlock = mBranchBlock.lock();
+  os << string << "\t" << branchBlock->GetName() << "\n";
+}
+
+Block::Block(std::string name, std::uint32_t address)
+    : mName(name), mAddress(address) {}
+
+void Block::Dump(std::ostream &os) const {
+  os << mName << "\n";
+  for (const auto &instr : mInstructions) {
+    instr->Dump(os);
+  }
 }
 
 Function::Function(std::string name, std::uint32_t address)
     : mName(name), mAddress(address) {}
 
 void Function::Dump(std::ostream &os) const {
+  os << mName << "\n";
+  for (const auto &block : mBlocks) {
+    block->Dump(os);
+  }
+}
+
+void Function::DunpInstructions(std::ostream &os) const {
   os << mName << "\n";
   for (const auto &instr : mInstructions) {
     instr->Dump(os);
@@ -127,6 +168,37 @@ CreateFunction(std::uint32_t address,
   return std::make_shared<Function>(stream.str(), address);
 }
 
+std::shared_ptr<Block>
+CreateBlock(std::uint32_t address,
+            std::optional<std::string> name = std::nullopt) {
+  std::stringstream stream;
+
+  if (name.has_value()) {
+    stream << "loc_" << *name << "_0x";
+  } else {
+    stream << "loc_0x";
+  }
+
+  stream << std::hex << address;
+  return std::make_shared<Block>(stream.str(), address);
+}
+
+void PowerPC::ParseInBlocks(std::shared_ptr<Function> &function) {
+  auto newBlock = CreateBlock(function->GetAddress());
+  newBlock->SetParent(function);
+  function->Add(newBlock);
+  for (auto instrIt = function->begin_instr(); instrIt != function->end_instr();
+       ++instrIt) {
+    newBlock->Add(*instrIt);
+    if (IsBranchInstruction(instrIt->get()->GetOpcode())) {
+      newBlock.reset();
+      newBlock =
+          CreateBlock(instrIt->get()->GetAddress() + sizeof(std::uint32_t));
+      function->Add(newBlock);
+    }
+  }
+}
+
 void PowerPC::ParseInstructionToFunctions(Program &program) {
 
   auto entryFunc = CreateFunction(program.GetEntryPoint(), "start");
@@ -134,6 +206,7 @@ void PowerPC::ParseInstructionToFunctions(Program &program) {
       program.GetTextSectionWithAddress(program.GetEntryPoint());
   entrySection->AddFunction(program.GetEntryPoint(), entryFunc);
 
+  // For every CallInstruction create a function that it branches to.
   for (auto &textSection : program.GetTextSections()) {
     auto &instructions = textSection.GetInstructions();
 
@@ -142,7 +215,7 @@ void PowerPC::ParseInstructionToFunctions(Program &program) {
         continue;
       }
 
-      auto branchInstr = std::static_pointer_cast<BranchInstruction>(instr);
+      auto branchInstr = std::static_pointer_cast<CallInstruction>(instr);
 
       auto branchAddr = branchInstr->GetCallAddress();
       auto *funcSect = program.GetTextSectionWithAddress(branchAddr);
@@ -165,6 +238,7 @@ void PowerPC::ParseInstructionToFunctions(Program &program) {
     }
   }
 
+  // Fill the function with instructions.
   for (auto &textSection : program.GetTextSections()) {
     auto &instructions = textSection.GetInstructions();
 
@@ -179,8 +253,15 @@ void PowerPC::ParseInstructionToFunctions(Program &program) {
         tempfunction.reset();
         tempfunction = textSection.GetFunction(instr->GetAddress());
       }
-      instr->SetParent(tempfunction);
+      instr->SetFunction(tempfunction);
       tempfunction->Add(instr);
+    }
+  }
+
+  // Parse Functions to blocks.
+  for (auto &textSection : program.GetTextSections()) {
+    for (auto &[addr, function] : textSection) {
+      ParseInBlocks(function);
     }
   }
 }
