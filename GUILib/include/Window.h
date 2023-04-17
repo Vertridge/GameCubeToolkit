@@ -9,6 +9,11 @@ public:
   Window();
   ~Window();
 
+  void BeginDraw();
+  void EndDraw();
+
+  bool ShouldClose();
+
 private:
   GLFWwindow *mWindow = nullptr;
 };
