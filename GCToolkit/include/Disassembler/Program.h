@@ -16,11 +16,6 @@ class Function;
 class Program;
 class Block;
 
-constexpr std::array<ppc_insn, 5> BranchInstructions = {
-    PPC_INS_B, PPC_INS_BC, PPC_INS_BDZ, PPC_INS_BDNZ};
-
-constexpr std::array<ppc_insn, 1> CallInstructions = {PPC_INS_BL};
-
 class Instruction {
 public:
   Instruction(std::string name, std::uint32_t address, ppc_insn opcode);
@@ -286,16 +281,6 @@ private:
   std::string mName;
   std::uint32_t mEntryPoint = 0;
 };
-
-inline bool IsBranchInstruction(ppc_insn instr) {
-  return std::find(BranchInstructions.begin(), BranchInstructions.end(),
-                   instr) != BranchInstructions.end();
-}
-
-inline bool IsCallInstruction(ppc_insn instr) {
-  return std::find(CallInstructions.begin(), CallInstructions.end(), instr) !=
-         CallInstructions.end();
-}
 
 void ParseInstructionToFunctions(Program &program);
 void ParseInBlocks(std::shared_ptr<Function> &function);

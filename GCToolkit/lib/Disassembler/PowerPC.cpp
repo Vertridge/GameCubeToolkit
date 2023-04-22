@@ -1,6 +1,7 @@
 #include "Disassembler/PowerPC.h"
 
 #include "Disassembler/Program.h"
+#include "Disassembler/Util.h"
 
 #include <algorithm>
 #include <iostream>
@@ -195,12 +196,12 @@ TextSection Disassembler::DisassembleSection(std::uint32_t offset,
       std::stringstream instr;
       instr << "\t" << insn[j].mnemonic << "\t" << insn[j].op_str;
 
-      if (IsCallInstruction(static_cast<ppc_insn>(insn[j].id))) {
+      if (Util::IsCallInstruction(static_cast<ppc_insn>(insn[j].id))) {
         auto call = CreateCallInstruction(addr, instr.str(), insn[j]);
         if (call.has_value()) {
           instructions.push_back(*call);
         }
-      } else if (IsBranchInstruction(static_cast<ppc_insn>(insn[j].id))) {
+      } else if (Util::IsBranchInstruction(static_cast<ppc_insn>(insn[j].id))) {
         auto branch = CreateBranchInstruction(addr, instr.str(), insn[j]);
         if (branch.has_value()) {
           instructions.push_back(*branch);
@@ -248,8 +249,6 @@ Program Disassembler::DisassemblePPC(Parsing::DOLFile &dol, std::ostream &os) {
   }
 
   cs_close(&handle);
-
-  ParseInstructionToFunctions(program);
 
   return program;
 }

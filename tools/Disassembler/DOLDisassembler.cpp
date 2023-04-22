@@ -56,6 +56,9 @@ int main(int argc, char *argv[]) {
   std::cout << "Disassembling" << std::endl;
   auto program = PowerPC::Disassembler::DisassemblePPC(dol, ofstrm);
 
+  std::cout << "Parsing functions and block" << std::endl;
+  PowerPC::ParseInstructionToFunctions(program);
+
   std::string dump = "dump.txt";
   if (result.count("dump")) {
     dump = result["dump"].as<std::string>();

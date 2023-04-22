@@ -1,9 +1,12 @@
 #include "Disassembler/Program.h"
 
+#include "Disassembler/Util.h"
+
 #include <algorithm>
 #include <cassert>
 #include <iostream>
 #include <sstream>
+#include <unordered_set>
 
 using namespace PowerPC;
 
@@ -184,17 +187,53 @@ CreateBlock(std::uint32_t address,
 }
 
 void PowerPC::ParseInBlocks(std::shared_ptr<Function> &function) {
+  // Collect all address that are jumped to.
+  std::unordered_set<std::shared_ptr<Instruction>> brancheeInstructions;
+  for (auto instrIt = function->begin_instr(); instrIt != function->end_instr();
+       ++instrIt) {
+    if (Util::IsBranchInstruction(instrIt->get()->GetOpcode())) {
+      auto branchInstr = std::static_pointer_cast<BranchInstruction>(*instrIt);
+      auto branchLoc = std::find_if(
+          function->begin_instr(), function->end_instr(),
+          [&branchInstr](std::shared_ptr<Instruction> instr) {
+            return instr->GetAddress() == branchInstr->GetBranchAddress();
+          });
+      if (branchLoc != function->end_instr()) {
+        brancheeInstructions.insert(*branchLoc);
+      } else {
+        std::cerr << "Could not find branch to address: 0x" << std::hex
+                  << branchInstr->GetBranchAddress() << std::endl;
+      }
+    }
+  }
+
   auto newBlock = CreateBlock(function->GetAddress());
   newBlock->SetParent(function);
   function->Add(newBlock);
+  std::uint32_t lastBlockAddr = 0;
   for (auto instrIt = function->begin_instr(); instrIt != function->end_instr();
        ++instrIt) {
-    newBlock->Add(*instrIt);
-    if (IsBranchInstruction(instrIt->get()->GetOpcode())) {
+    if (Util::IsBranchInstruction(instrIt->get()->GetOpcode()) &&
+        instrIt->get()->GetAddress() + sizeof(std::uint32_t) != lastBlockAddr) {
+      // A branch is still part of the previous block
+      newBlock->Add(*instrIt);
       newBlock.reset();
       newBlock =
           CreateBlock(instrIt->get()->GetAddress() + sizeof(std::uint32_t));
       function->Add(newBlock);
+      lastBlockAddr = newBlock->GetAddress();
+    } else if (std::find(brancheeInstructions.begin(),
+                         brancheeInstructions.end(),
+                         *instrIt) != brancheeInstructions.end() &&
+               instrIt->get()->GetAddress() != lastBlockAddr) {
+      newBlock.reset();
+      newBlock = CreateBlock(instrIt->get()->GetAddress());
+      function->Add(newBlock);
+      // THe instruction that is branched to is part of the new block.
+      newBlock->Add(*instrIt);
+      lastBlockAddr = newBlock->GetAddress();
+    } else {
+      newBlock->Add(*instrIt);
     }
   }
 }
@@ -211,7 +250,7 @@ void PowerPC::ParseInstructionToFunctions(Program &program) {
     auto &instructions = textSection.GetInstructions();
 
     for (auto &instr : instructions) {
-      if (instr->GetOpcode() != PPC_INS_BL) {
+      if (!Util::IsCallInstruction(instr->GetOpcode())) {
         continue;
       }
 
