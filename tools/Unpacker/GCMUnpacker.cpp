@@ -5,6 +5,9 @@
 #include "Parser/FST.h"
 #include "Parser/GCM.h"
 
+// Vendor
+#include "cxxopts.hpp"
+
 std::filesystem::path GetParentDir(Parsing::FST &fst,
                                    const Parsing::FSTEntry &entry) {
   // FileOffset contains the parent dir.
@@ -43,65 +46,146 @@ void WriteAssets(std::filesystem::path basePath, Parsing::GCMFile &gcm,
   }
 }
 
-int main(int argc, char *argv[]) {
-
-  if (argc < 2) {
-    std::cout << "Pass File to Unpack" << std::endl;
+int Unpack(cxxopts::ParseResult &result) {
+  if (!result.count("gcm")) {
+    std::cout << "gcm is required when unpacking see help" << std::endl;
     return 1;
   }
 
-  std::cout << "GCM Unpacker: " << argv[1] << std::endl;
+  auto input = result["gcm"].as<std::string>();
+
+  std::cout << "GCM Unpacker: " << input << std::endl;
 
   Parsing::GCMFile gcm;
 
-  if (!gcm.Parse(argv[1])) {
-    std::cerr << "Failed to open: " << argv[1] << std::endl;
+  if (!gcm.Parse(input)) {
+    std::cerr << "Failed to open: " << input << std::endl;
     return 1;
   }
 
-  std::string output = "gcmDump.txt";
-  if (argc >= 3) {
-    output = argv[2];
+  std::string dump = "gcmDump.txt";
+  if (result.count("dump")) {
+    dump = result["dump"].as<std::string>();
   }
 
-  std::ofstream ofstrm(output, std::ios::binary);
+  std::ofstream dumpstrm(dump, std::ios::binary);
 
-  gcm.PrintBootHeader(ofstrm);
-  gcm.PrintDiskHeader(ofstrm);
-  gcm.PrintAppLoaderHeader(ofstrm);
+  gcm.PrintBootHeader(dumpstrm);
+  gcm.PrintDiskHeader(dumpstrm);
+  gcm.PrintAppLoaderHeader(dumpstrm);
 
-  ofstrm.close();
+  dumpstrm.close();
 
-  std::ofstream bootofstrm(Parsing::BootFileName, std::ios::binary);
+  std::filesystem::path out = "out";
+  if (result.count("output")) {
+    out = result["output"].as<std::string>();
+  }
+
+  if (!std::filesystem::is_directory(out)) {
+    auto res = std::filesystem::create_directory(out);
+    std::cout << "Created dir: " << out.string() << std::endl;
+    if (!res) {
+      std::cerr << "Failed to create dir: " << out.string() << std::endl;
+    }
+  }
+
+  const std::filesystem::path sys = out / "sys";
+
+  if (!std::filesystem::is_directory(sys)) {
+    auto res = std::filesystem::create_directory(sys);
+    std::cout << "Created dir: " << sys.string() << std::endl;
+    if (!res) {
+      std::cerr << "Failed to create dir: " << sys.string() << std::endl;
+    }
+  }
+
+  std::ofstream bootofstrm(sys / Parsing::BootFileName, std::ios::binary);
   gcm.WriteBootHeader(bootofstrm);
   bootofstrm.close();
 
-  std::ofstream diskofstrm(Parsing::DiskFileName, std::ios::binary);
+  std::ofstream diskofstrm(sys / Parsing::DiskFileName, std::ios::binary);
   gcm.WriteDiskHeader(diskofstrm);
   diskofstrm.close();
 
-  std::ofstream applofstrm(Parsing::AppLoaderFileName, std::ios::binary);
+  std::ofstream applofstrm(sys / Parsing::AppLoaderFileName, std::ios::binary);
   gcm.WriteAppLoaderHeader(applofstrm);
   applofstrm.close();
 
-  std::ofstream dolofstrm(Parsing::DolFileName, std::ios::binary);
+  std::ofstream dolofstrm(sys / Parsing::DolFileName, std::ios::binary);
   gcm.WriteDolFile(dolofstrm);
   dolofstrm.close();
 
-  std::ofstream fstofstrm(Parsing::FSTFileName, std::ios::binary);
+  std::ofstream fstofstrm(sys / Parsing::FSTFileName, std::ios::binary);
   gcm.WriteFSTFile(fstofstrm);
   fstofstrm.close();
+
+  const std::filesystem::path res = out / "res";
+
+  if (!std::filesystem::is_directory(res)) {
+    auto result = std::filesystem::create_directory(res);
+    std::cout << "Created dir: " << res.string() << std::endl;
+    if (!result) {
+      std::cerr << "Failed to create dir: " << res.string() << std::endl;
+    }
+  }
 
   Parsing::FST fst;
   auto buffer = gcm.GetFileBuffer();
   auto FSTOffset = gcm.GetBootHeader()->FSTOffset;
   fst.Parse(buffer.data() + FSTOffset, gcm.GetBootHeader()->FSTSize);
 
-  std::ofstream fstdumpstr("fstDump.txt", std::ios::binary);
+  std::ofstream fstdumpstr(sys / "fstDump.txt", std::ios::binary);
   fst.Print(fstdumpstr);
   fst.PrintStrings(fstdumpstr);
   fstdumpstr.close();
 
-  WriteAssets("/home/ruben/Projects/c++/Gamecube/GameCubeToolkit/build", gcm,
-              fst);
+  WriteAssets(res, gcm, fst);
+  return 0;
+}
+
+int Repack(cxxopts::ParseResult &result) {
+  std::cerr << "Repacking is currently not supported" << std::endl;
+
+  std::string out = "./out";
+  if (result.count("output")) {
+    out = result["output"].as<std::string>();
+  }
+
+  return 1;
+}
+
+int main(int argc, char *argv[]) {
+
+  cxxopts::Options options("GCMUnpacker", "Unpack GCM / iso");
+
+  // clang-format off
+  options.add_options()
+      ("o,output", "Output directory", cxxopts::value<std::string>())
+      ("d,dump-file", "Dump file", cxxopts::value<std::string>())
+      ("u,unpack", "Unpack")
+      ("p,pack", "Repack")
+      ("h,help", "Print usage")
+      ("g,gcm", "Input", cxxopts::value<std::string>());
+  // clang-format on
+
+  options.parse_positional({"gcm"});
+
+  auto result = options.parse(argc, argv);
+
+  if (result.count("help")) {
+    std::cout << options.help() << std::endl;
+    return 0;
+  }
+
+  if (result.count("pack") == 0 && result.count("unpack") == 0) {
+    std::cout << "Pack or unpack is required\n" << options.help() << std::endl;
+    return 0;
+  }
+
+  if (result.count("unpack")) {
+    return Unpack(result);
+  } else if (result.count("pack")) {
+    return Repack(result);
+  }
+  return 0;
 }

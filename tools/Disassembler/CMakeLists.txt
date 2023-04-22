@@ -1,2 +1,2 @@
 add_executable(DOLDisassembler DOLDisassembler.cpp)
-target_link_libraries(DOLDisassembler Parser Disassembler)
+target_link_libraries(DOLDisassembler Parser Disassembler cxxopts)

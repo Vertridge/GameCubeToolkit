@@ -3,25 +3,50 @@
 
 #include <Parser/DOL.h>
 
-#include "Disassembler/PowerPC.h"
+#include <Disassembler/PowerPC.h>
+
+// Vendor
+#include "cxxopts.hpp"
 
 int main(int argc, char *argv[]) {
-  if (argc < 2) {
-    std::cout << "Pass 2 file to patch" << std::endl;
+
+  cxxopts::Options options("DOLDisassembler", "Disassemble DOL");
+
+  // clang-format off
+  options.add_options()
+      ("dump,dump-file", "Dump file", cxxopts::value<std::string>())
+      ("dis,disassembly", "Disassenbly file", cxxopts::value<std::string>())
+      ("h,help", "Print usage")
+      ("dol", "Input", cxxopts::value<std::string>());
+  // clang-format on
+
+  options.parse_positional({"dol"});
+
+  auto result = options.parse(argc, argv);
+
+  if (result.count("help")) {
+    std::cout << options.help() << std::endl;
+    return 0;
+  }
+
+  if (!result.count("dol")) {
+    std::cout << "dol file to patch required\n" << options.help() << std::endl;
     return 1;
   }
 
-  std::cout << "DOLDisassembler: " << argv[1] << std::endl;
+  std::string input = result["dol"].as<std::string>();
+
+  std::cout << "DOLDisassembler: " << input << std::endl;
 
   Parsing::DOLFile dol;
-  if (!dol.Parse(argv[1])) {
-    std::cerr << "Failed to open: " << argv[1] << std::endl;
+  if (!dol.Parse(input)) {
+    std::cerr << "Failed to open: " << input << std::endl;
     return 1;
   }
 
-  std::string output = "disassemble.txt";
-  if (argc >= 3) {
-    output = argv[2];
+  std::string output = "disassembly.txt";
+  if (result.count("dis")) {
+    output = result["disassembly"].as<std::string>();
   }
 
   std::ofstream ofstrm(output, std::ios::binary);
@@ -31,8 +56,12 @@ int main(int argc, char *argv[]) {
   std::cout << "Disassembling" << std::endl;
   auto program = PowerPC::Disassembler::DisassemblePPC(dol, ofstrm);
 
-  std::string output2 = "dump.txt";
-  std::ofstream dmpstrm(output2, std::ios::binary);
+  std::string dump = "dump.txt";
+  if (result.count("dump")) {
+    dump = result["dump"].as<std::string>();
+  }
+
+  std::ofstream dmpstrm(dump, std::ios::binary);
 
   std::cout << "Dumping" << std::endl;
   program.Dump(dmpstrm);
