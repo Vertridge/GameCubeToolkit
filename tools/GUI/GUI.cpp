@@ -1,6 +1,6 @@
 #include <iostream>
 
-#include "Window.h"
+#include "GUIProgram.h"
 
 // Platform
 #include <Platform/FileSelector.h>
@@ -68,13 +68,9 @@ int main(int argc, char *argv[]) {
 
   std::cout << "Opening iso file: '" << options.input << "'." << std::endl;
 
-  GUI::Window window;
-
-  while (!window.ShouldClose()) {
-    window.BeginDraw();
-
-    window.EndDraw();
-  }
+  GUI::GUIProgram program({options.input, options.dis, options.dump});
+  program.Init();
+  program.Start();
 
   return 0;
 }
