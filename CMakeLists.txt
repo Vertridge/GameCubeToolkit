@@ -58,6 +58,7 @@ add_subdirectory(GCToolkit)
 include_directories(${CMAKE_SOURCE_DIR}/GUILib/include)
 add_subdirectory(GUILib)
 add_subdirectory(test)
+include_directories(${CMAKE_SOURCE_DIR}/tools/GUI/include)
 add_subdirectory(tools)
 
 
