@@ -3,10 +3,14 @@
 #include <memory>
 #include <vector>
 
+namespace GUILib {
+
 class UIBase {
 public:
   UIBase() = default;
   virtual ~UIBase() = default;
+
+  static int GetID() { return -1; }
 
   void Init();
   virtual void OnInit() = 0;
@@ -23,3 +27,5 @@ private:
   std::vector<UIBase *> mChildren;
   UIBase *mParent = nullptr;
 };
+
+} // namespace GUILib

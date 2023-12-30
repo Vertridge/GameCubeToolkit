@@ -2,6 +2,8 @@
 
 #include <cassert>
 
+namespace GUILib {
+
 void UIBase::Init() {
   OnInit();
   for (auto &child : mChildren) {
@@ -32,3 +34,5 @@ void UIBase::AddChild(UIBase *child) {
   child->SetParent(this);
   mChildren.push_back(child);
 }
+
+} // namespace GUILib

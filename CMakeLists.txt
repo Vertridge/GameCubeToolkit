@@ -53,6 +53,8 @@ find_package(glfw3 REQUIRED)
 find_package(OpenGL REQUIRED)
 
 add_subdirectory(vendor)
+include_directories(${CMAKE_SOURCE_DIR}/Util/include)
+add_subdirectory(Util)
 include_directories(${CMAKE_SOURCE_DIR}/GCToolkit/include)
 add_subdirectory(GCToolkit)
 include_directories(${CMAKE_SOURCE_DIR}/GUILib/include)
