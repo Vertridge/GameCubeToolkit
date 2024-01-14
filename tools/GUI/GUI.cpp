@@ -2,6 +2,10 @@
 
 #include "GUIProgram.h"
 
+// Util
+#include <Logger/ConsoleLogger.h>
+#include <Logger/Logger.h>
+
 // Platform
 #include <Platform/FileSelector.h>
 
@@ -54,16 +58,24 @@ GUIOptions ParseCMDOptions(int argc, char *argv[]) {
   return guiOptions;
 }
 
+void InitLogger() {
+  auto &logger = util::Logger::GetSingleton();
+  logger.AddLogger(new util::ConsoleLogger());
+}
+
 int main(int argc, char *argv[]) {
-  std::cout << "GUI Started" << std::endl;
+  InitLogger();
+
+  LOG_INFO("GUI Started");
 
   auto options = ParseCMDOptions(argc, argv);
 
   if (options.input == "") {
-    std::cout << "Select input file" << std::endl;
+    LOG_INFO("Select input file");
     options.input = Platform::FileSelector::SelectFile("Select input iso");
   }
   if (!std::filesystem::is_regular_file(options.input)) {
+    LOG_ERROR("Invalid file: ");
     std::cerr << "Invalid file '" << options.input << "' selected."
               << std::endl;
     exit(1);
