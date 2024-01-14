@@ -1,6 +1,6 @@
 #include "Parser/FST.h"
 
-#include "Util/Binary.h"
+#include "Binary.h"
 
 #include <cassert>
 #include <cstring>

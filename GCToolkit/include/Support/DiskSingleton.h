@@ -1,5 +1,7 @@
 #pragma once
 
+#include <Platform/FileSelector.h>
+
 #include <filesystem>
 #include <string>
 
@@ -22,5 +24,10 @@ public:
 private:
   DiskSingleton() = default;
 };
+
+inline void ChooseProjectDir() {
+  DiskSingleton::GetSingleton().ProjectDir =
+      Platform::FileSelector::SelectDirectory("Select project directory");
+}
 
 } // namespace Support

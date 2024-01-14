@@ -61,7 +61,7 @@ int main(int argc, char *argv[]) {
 
   if (options.input == "") {
     std::cout << "Select input file" << std::endl;
-    options.input = Platform::FileSelector::SelectFile();
+    options.input = Platform::FileSelector::SelectFile("Select input iso");
   }
   if (!std::filesystem::is_regular_file(options.input)) {
     std::cerr << "Invalid file '" << options.input << "' selected."

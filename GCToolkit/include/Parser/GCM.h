@@ -4,7 +4,7 @@
 #include <istream>
 #include <vector>
 
-#include "Util/MemoryMap.h"
+#include "MemoryMap.h"
 
 namespace Parsing {
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include <Util/int24.h>
+#include <int24.h>
 
 #include <cstdint>
 #include <map>
