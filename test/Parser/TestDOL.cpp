@@ -2,7 +2,7 @@
 
 #include "Parser/DOL.h"
 
-#include "Util/MemoryStream.h"
+#include "MemoryStream.h"
 
 #include <iostream>
 #include <sstream>

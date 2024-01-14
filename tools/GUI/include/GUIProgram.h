@@ -1,5 +1,6 @@
 #pragma once
 
+#include "ImGui/UIManager.h"
 #include "Window.h"
 
 // stl
@@ -9,6 +10,7 @@ namespace GUI {
 
 struct ProgramOptions {
   std::string inputISO;
+  std::string projectDir;
   std::string dis;
   std::string dump;
 };
@@ -28,10 +30,13 @@ public:
   void End();
 
 private:
+  void InitUI();
+
   bool mExit = false;
 
   Window mWindow;
   ProgramOptions mOptions;
+  GUILib::UIManager mUiManager;
 };
 
 } // namespace GUI

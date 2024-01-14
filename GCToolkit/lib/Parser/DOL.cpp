@@ -1,6 +1,6 @@
 #include "Parser/DOL.h"
 
-#include "Util/Binary.h"
+#include "Binary.h"
 
 #include <cerrno>
 #include <cstring>

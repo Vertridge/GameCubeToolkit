@@ -1,4 +1,4 @@
-add_subdirectory(Util)
+add_subdirectory(Support)
 add_subdirectory(Platform)
 add_subdirectory(Parser)
 add_subdirectory(Disassembler)

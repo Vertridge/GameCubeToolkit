@@ -1,10 +1,35 @@
 #include "GUIProgram.h"
 
+// GCToolkit
+#include <Support/DiskSingleton.h>
+
+// UI
+#include <ImGuiObjects/UnpackerGui.h>
+
+// stl
+#include <iostream>
+
 namespace GUI {
 
 GUIProgram::GUIProgram(ProgramOptions options) : mOptions(options) {}
 
-void GUIProgram::Init() {}
+void GUIProgram::Init() {
+  auto &disk = Support::DiskSingleton::GetSingleton();
+  if (!mOptions.projectDir.empty()) {
+    disk.ProjectDir = mOptions.projectDir;
+  }
+  disk.Dump = mOptions.dump;
+  disk.Disassembly = mOptions.dis;
+  disk.Iso = mOptions.inputISO;
+
+  InitUI();
+}
+
+void GUIProgram::InitUI() {
+  std::cout << "Init UI" << std::endl;
+  mUiManager.AddUi(UIObjects::UnpackerGui::GetID(),
+                   std::make_unique<UIObjects::UnpackerGui>());
+}
 
 void GUIProgram::Start() {
 
@@ -24,6 +49,8 @@ void GUIProgram::End() {}
 
 void GUIProgram::Render() {
   mWindow.BeginDraw();
+
+  mUiManager.Draw();
 
   mWindow.EndDraw();
 }
