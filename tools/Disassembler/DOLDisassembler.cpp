@@ -5,10 +5,20 @@
 
 #include <Disassembler/PowerPC.h>
 
+// Util
+#include <Logger/ConsoleLogger.h>
+#include <Logger/Logger.h>
+
 // Vendor
 #include "cxxopts.hpp"
 
+void InitLogger() {
+  auto &logger = util::Logger::GetSingleton();
+  logger.AddLogger(new util::ConsoleLogger());
+}
+
 int main(int argc, char *argv[]) {
+  InitLogger();
 
   cxxopts::Options options("DOLDisassembler", "Disassemble DOL");
 
@@ -25,22 +35,23 @@ int main(int argc, char *argv[]) {
   auto result = options.parse(argc, argv);
 
   if (result.count("help")) {
-    std::cout << options.help() << std::endl;
+    LOG_INFO(options.help());
     return 0;
   }
 
   if (!result.count("dol")) {
-    std::cout << "dol file to patch required\n" << options.help() << std::endl;
+    LOG_ERROR("dol file to patch required");
+    LOG_ERROR(options.help());
     return 1;
   }
 
   std::string input = result["dol"].as<std::string>();
 
-  std::cout << "DOLDisassembler: " << input << std::endl;
+  LOG_INFO("DOLDisassembler: {}", input);
 
   Parsing::DOLFile dol;
   if (!dol.Parse(input)) {
-    std::cerr << "Failed to open: " << input << std::endl;
+    LOG_ERROR("Failed to open: {}", input);
     return 1;
   }
 
@@ -53,10 +64,10 @@ int main(int argc, char *argv[]) {
 
   dol.PrintHeader(ofstrm);
 
-  std::cout << "Disassembling" << std::endl;
+  LOG_INFO("Disassembling");
   auto program = PowerPC::Disassembler::DisassemblePPC(dol, ofstrm);
 
-  std::cout << "Parsing functions and block" << std::endl;
+  LOG_INFO("Parsing functions and blocks");
   PowerPC::ParseInstructionToFunctions(program);
 
   std::string dump = "dump.txt";
@@ -66,7 +77,7 @@ int main(int argc, char *argv[]) {
 
   std::ofstream dmpstrm(dump, std::ios::binary);
 
-  std::cout << "Dumping" << std::endl;
+  LOG_INFO("Dumping");
   program.Dump(dmpstrm);
 
   return 0;

@@ -2,6 +2,9 @@
 
 #include "Binary.h"
 
+// Util
+#include <Logger/Logger.h>
+
 #include <cerrno>
 #include <cstring>
 #include <fstream>
@@ -14,11 +17,11 @@ DOLFile::DOLFile(std::string file) { Parse(file); }
 
 bool DOLFile::Parse(std::istream &stream) {
   if (stream.peek() == EOF) {
-    std::cerr << "Failed to open: " << mFileName << " " << std::strerror(errno)
-              << std::endl;
+    LOG_ERROR("Failed to open: '{}' - {}", mFileName, std::strerror(errno));
     return false;
   }
-  std::cerr << "Parsing header" << std::endl;
+  LOG_TRACE("Parsing header");
+
   ParseHeader(stream);
   ReadData(stream);
   return true;
@@ -26,11 +29,10 @@ bool DOLFile::Parse(std::istream &stream) {
 
 bool DOLFile::Parse(std::string file) {
   mFileName = file;
-  std::cout << "Parsing File: " << mFileName << std::endl;
+  LOG_INFO("Parsing File: {}", mFileName);
   std::ifstream input(file.c_str(), std::ios::binary);
   if (!input.is_open()) {
-    std::cerr << "Failed to open: " << mFileName << " " << std::strerror(errno)
-              << std::endl;
+    LOG_ERROR("Failed to open: '{}' - {}", mFileName, std::strerror(errno));
     return false;
   }
   return Parse(input);

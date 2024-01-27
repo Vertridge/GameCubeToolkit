@@ -6,6 +6,9 @@
 // UI
 #include <ImGuiObjects/UnpackerGui.h>
 
+// Util
+#include <Logger/Logger.h>
+
 // stl
 #include <iostream>
 
@@ -26,7 +29,7 @@ void GUIProgram::Init() {
 }
 
 void GUIProgram::InitUI() {
-  std::cout << "Init UI" << std::endl;
+  LOG_TRACE("Init UI");
   mUiManager.AddUi(UIObjects::UnpackerGui::GetID(),
                    std::make_unique<UIObjects::UnpackerGui>());
 }

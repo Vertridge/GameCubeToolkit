@@ -1,5 +1,6 @@
 #include "ImGuiObjects/UnpackerGui.h"
 
+#include <Logger/Logger.h>
 #include <Support/DiskSingleton.h>
 #include <Unpacker/Unpacker.h>
 
@@ -17,15 +18,16 @@ void Unpack() {
   if (disk.ProjectDir.empty()) {
     Support::ChooseProjectDir();
   }
-  std::cout << "output dir: " << disk.ProjectDir << std::endl;
+  LOG_INFO("Output dir: {}", disk.ProjectDir.string());
 
   Unpacking::UnpackerOptions options{disk.Iso, disk.Dump, disk.ProjectDir};
 
   Unpacking::Unpacker unpacker(options);
   unpacker.Dump();
   if (!unpacker.Unpack()) {
-    std::cerr << "Failed to unpack " << disk.Iso << std::endl;
+    LOG_ERROR("Failed to unpack '{}'", disk.Iso.string());
   }
+  LOG_INFO("Unpacking done");
 }
 
 } // namespace
