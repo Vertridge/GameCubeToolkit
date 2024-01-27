@@ -7,6 +7,9 @@
 #include <string>
 #include <vector>
 
+// vendor
+#include <fmt/core.h>
+
 namespace util {
 
 class Logger {
@@ -29,16 +32,20 @@ private:
   std::vector<LoggerBase *> mLoggers;
 };
 
-#define LOG_ERROR(msg)                                                         \
-  util::Logger::GetSingleton().Log(util::Verbosity::ERROR, msg)
+#define LOG_ERROR(...)                                                         \
+  util::Logger::GetSingleton().Log(util::Verbosity::ERROR,                     \
+                                   fmt::format(__VA_ARGS__))
 
-#define LOG_WARN(msg)                                                          \
-  util::Logger::GetSingleton().Log(util::Verbosity::WARN, msg)
+#define LOG_WARN(...)                                                          \
+  util::Logger::GetSingleton().Log(util::Verbosity::WARN,                      \
+                                   fmt::format(__VA_ARGS__))
 
-#define LOG_INFO(msg)                                                          \
-  util::Logger::GetSingleton().Log(util::Verbosity::INFO, msg)
+#define LOG_INFO(...)                                                          \
+  util::Logger::GetSingleton().Log(util::Verbosity::INFO,                      \
+                                   fmt::format(__VA_ARGS__))
 
-#define LOG_TRACE(msg)                                                         \
-  util::Logger::GetSingleton().Log(util::Verbosity::TRACE, msg)
+#define LOG_TRACE(...)                                                         \
+  util::Logger::GetSingleton().Log(util::Verbosity::TRACE,                     \
+                                   fmt::format(__VA_ARGS__))
 
 } // namespace util

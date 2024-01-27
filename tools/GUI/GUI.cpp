@@ -66,7 +66,7 @@ void InitLogger() {
 int main(int argc, char *argv[]) {
   InitLogger();
 
-  LOG_INFO("GUI Started");
+  LOG_INFO("GUI Started {}", 10);
 
   auto options = ParseCMDOptions(argc, argv);
 
