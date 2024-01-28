@@ -7,9 +7,6 @@
 // vendor
 #include <imgui.h>
 
-// stl
-#include <iostream>
-
 namespace UIObjects {
 
 namespace {

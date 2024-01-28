@@ -4,7 +4,7 @@
 
 namespace util {
 
-void ConsoleLogger::Log(Verbosity verbosity, const std::string &str) const {
+void ConsoleLogger::Log(Verbosity verbosity, const std::string &str) {
   switch (verbosity) {
   case Verbosity::ERROR:
     std::cerr << "\033[1;31m"
