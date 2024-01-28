@@ -24,6 +24,7 @@ public:
 
   void Log(Verbosity verbosity, const std::string &str);
   void AddLogger(LoggerBase *logger);
+  void RemoveLogger(LoggerBase *logger);
 
   ~Logger();
 

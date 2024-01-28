@@ -9,6 +9,9 @@
 // vendor
 #include <imgui.h>
 
+// stl
+#include <mutex>
+
 using namespace GUILib;
 using namespace util;
 
@@ -26,15 +29,18 @@ public:
 
   void Clear();
 
-  ~LoggerGui() = default;
+  ~LoggerGui();
 
 private:
   void AddToBuffer(const std::string &str);
   ImGuiTextBuffer mBuf;
+  ImGuiTextFilter mFilter;
   // Index to lines offset. We maintain this with AddLog() calls.
   ImVector<int> mLineOffsets;
   // Keep scrolling if already at the bottom.
   bool mAutoScroll;
+
+  std::mutex mLock;
 };
 
 } // namespace UIObjects

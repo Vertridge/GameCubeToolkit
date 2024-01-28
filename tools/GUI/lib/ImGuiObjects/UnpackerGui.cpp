@@ -7,14 +7,14 @@
 // vendor
 #include <imgui.h>
 
+// stl
+#include <thread>
+
 namespace UIObjects {
 
 namespace {
 void Unpack() {
   auto &disk = Support::DiskSingleton::GetSingleton();
-  if (disk.ProjectDir.empty()) {
-    Support::ChooseProjectDir();
-  }
   LOG_INFO("Output dir: {}", disk.ProjectDir.string());
 
   Unpacking::UnpackerOptions options{disk.Iso, disk.Dump, disk.ProjectDir};
@@ -35,7 +35,13 @@ void UnpackerGui::OnBeginDraw() {
   ImGui::Begin("Unpacker");
 
   if (ImGui::Button("Unpack")) {
-    Unpack();
+    auto &disk = Support::DiskSingleton::GetSingleton();
+    if (disk.ProjectDir.empty()) {
+      Support::ChooseProjectDir();
+    }
+
+    std::thread thread(Unpack);
+    thread.detach();
   }
   ImGui::Separator();
 }

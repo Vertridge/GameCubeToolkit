@@ -34,9 +34,10 @@ void GUIProgram::InitUI() {
   mUiManager.AddUi(UIObjects::UnpackerGui::GetID(),
                    std::make_unique<UIObjects::UnpackerGui>());
 
-  auto loggerGui = std::make_unique<UIObjects::LoggerGui>();
-  Logger::GetSingleton().AddLogger(loggerGui.get());
-  mUiManager.AddUi(UIObjects::LoggerGui::GetID(), std::move(loggerGui));
+  mUiManager.AddUi(UIObjects::LoggerGui::GetID(),
+                   std::make_unique<UIObjects::LoggerGui>());
+
+  mUiManager.Init();
 }
 
 void GUIProgram::Start() {

@@ -2,6 +2,12 @@
 
 namespace GUILib {
 
+void UIManager::Init() {
+  for (auto &ui : mUi) {
+    ui.second->Init();
+  }
+}
+
 Error UIManager::AddUi(int id, std::unique_ptr<UIBase> ui) {
   if (mUi.find(id) != mUi.end()) {
     return MakeError("Key already exists in map");

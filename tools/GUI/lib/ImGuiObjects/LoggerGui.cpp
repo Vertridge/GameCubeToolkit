@@ -1,11 +1,19 @@
 #include "ImGuiObjects/LoggerGui.h"
 
+// Util
+#include <Logger/Logger.h>
+
 // stl
 #include <sstream>
 
 namespace UIObjects {
 
-void LoggerGui::OnInit() {}
+void LoggerGui::OnInit() {
+  Logger::GetSingleton().AddLogger(this);
+  mAutoScroll = true;
+}
+
+LoggerGui::~LoggerGui() { Logger::GetSingleton().RemoveLogger(this); }
 
 void LoggerGui::OnBeginDraw() {
   ImGui::Begin("Log Console");
@@ -23,7 +31,7 @@ void LoggerGui::OnBeginDraw() {
   ImGui::SameLine();
   bool copy = ImGui::Button("Copy");
   ImGui::SameLine();
-  // Filter.Draw("Filter", -100.0f);
+  mFilter.Draw("Filter", -100.0f);
 
   ImGui::Separator();
   ImGui::BeginChild("scrolling", ImVec2(0, 0), false,
@@ -35,23 +43,40 @@ void LoggerGui::OnBeginDraw() {
     ImGui::LogToClipboard();
   }
   ImGui::PushStyleVar(ImGuiStyleVar_ItemSpacing, ImVec2(0, 0));
+
+  mLock.lock();
   const char *buf = mBuf.begin();
-  const char *buf_end = mBuf.end();
+  const char *bufEnd = mBuf.end();
 
   // Start drawning the log
-  ImGuiListClipper clipper;
-  clipper.Begin(mLineOffsets.Size);
-  while (clipper.Step()) {
-    for (int line_no = clipper.DisplayStart; line_no < clipper.DisplayEnd;
-         line_no++) {
-      const char *line_start = buf + mLineOffsets[line_no];
-      const char *line_end = (line_no + 1 < mLineOffsets.Size)
-                                 ? (buf + mLineOffsets[line_no + 1] - 1)
-                                 : buf_end;
-      ImGui::TextUnformatted(line_start, line_end);
+  if (mFilter.IsActive()) {
+    for (int lineNo = 0; lineNo < mLineOffsets.Size; lineNo++) {
+      const char *lineStart = buf + mLineOffsets[lineNo];
+      const char *lineEnd = (lineNo + 1 < mLineOffsets.Size)
+                                ? (buf + mLineOffsets[lineNo + 1] - 1)
+                                : bufEnd;
+      if (mFilter.PassFilter(lineStart, lineEnd)) {
+        ImGui::TextUnformatted(lineStart, lineEnd);
+      }
     }
+  } else {
+    ImGuiListClipper clipper;
+    clipper.Begin(mLineOffsets.Size);
+    while (clipper.Step()) {
+      for (int lineNo = clipper.DisplayStart; lineNo < clipper.DisplayEnd;
+           lineNo++) {
+        const char *lineStart = buf + mLineOffsets[lineNo];
+        const char *lineEnd = (lineNo + 1 < mLineOffsets.Size)
+                                  ? (buf + mLineOffsets[lineNo + 1] - 1)
+                                  : bufEnd;
+        ImGui::TextUnformatted(lineStart, lineEnd);
+      }
+    }
+    clipper.End();
   }
-  clipper.End();
+
+  mLock.unlock();
+
   ImGui::PopStyleVar();
 
   if (mAutoScroll && ImGui::GetScrollY() >= ImGui::GetScrollMaxY()) {
@@ -90,13 +115,17 @@ void LoggerGui::Log(Verbosity verbosity, const std::string &str) {
     break;
   }
 
+  mLock.lock();
   AddToBuffer(ss.str());
+  mLock.unlock();
 }
 
 void LoggerGui::Clear() {
+  mLock.lock();
   mBuf.clear();
   mLineOffsets.clear();
   mLineOffsets.push_back(0);
+  mLock.unlock();
 }
 
 } // namespace UIObjects
