@@ -12,6 +12,7 @@ namespace GUILib {
 
 class UIManager {
 public:
+  void Init();
   Error AddUi(int id, std::unique_ptr<UIBase> ui);
   Error RemoveUi(int id);
   void Draw();

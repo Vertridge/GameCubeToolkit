@@ -4,7 +4,11 @@
 #include <Support/DiskSingleton.h>
 
 // UI
+#include <ImGuiObjects/LoggerGui.h>
 #include <ImGuiObjects/UnpackerGui.h>
+
+// Util
+#include <Logger/Logger.h>
 
 // stl
 #include <iostream>
@@ -26,9 +30,14 @@ void GUIProgram::Init() {
 }
 
 void GUIProgram::InitUI() {
-  std::cout << "Init UI" << std::endl;
+  LOG_TRACE("Init UI");
   mUiManager.AddUi(UIObjects::UnpackerGui::GetID(),
                    std::make_unique<UIObjects::UnpackerGui>());
+
+  mUiManager.AddUi(UIObjects::LoggerGui::GetID(),
+                   std::make_unique<UIObjects::LoggerGui>());
+
+  mUiManager.Init();
 }
 
 void GUIProgram::Start() {

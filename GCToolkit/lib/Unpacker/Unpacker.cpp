@@ -1,9 +1,13 @@
 #include "Unpacker/Unpacker.h"
 
-// Stl
+// Util
+#include <Logger/Logger.h>
+
+// stl
 #include <filesystem>
 #include <fstream>
 #include <iostream>
+#include <thread>
 
 namespace Unpacking {
 
@@ -30,9 +34,9 @@ void WriteAssets(std::filesystem::path basePath, Parsing::GCMFile &gcm,
 
       auto res = std::filesystem::create_directory(dirPath);
       curPath = dirPath;
-      std::cout << "Created dir: " << dirPath.string() << std::endl;
+      LOG_TRACE("Created dir: {}", dirPath.string());
       if (!res) {
-        std::cerr << "Failed to create dir: " << dirPath.string() << std::endl;
+        LOG_ERROR("Failed to create dir: {}", dirPath.string());
       }
       continue;
     }
@@ -40,7 +44,7 @@ void WriteAssets(std::filesystem::path basePath, Parsing::GCMFile &gcm,
     auto filePath = curPath / fileName;
     std::ofstream ofstrm(filePath, std::ios::binary);
     auto *filePtr = buffer + entry.fileOffset;
-    std::cout << "Creating file: " << filePath.string() << std::endl;
+    LOG_TRACE("Creating file: {}", filePath.string());
 
     ofstrm.write(reinterpret_cast<char *>(filePtr), entry.fileLen);
   }
@@ -56,9 +60,9 @@ bool Unpacker::Unpack() {
   std::filesystem::path out = mOptions.outDir;
   if (!std::filesystem::is_directory(out)) {
     auto res = std::filesystem::create_directory(out);
-    std::cout << "Created dir: " << out.string() << std::endl;
+    LOG_TRACE("Created dir: {}", out.string());
     if (!res) {
-      std::cerr << "Failed to create dir: " << out.string() << std::endl;
+      LOG_ERROR("Failed to create dir: {}", out.string());
       return false;
     }
   }
@@ -67,9 +71,9 @@ bool Unpacker::Unpack() {
 
   if (!std::filesystem::is_directory(sys)) {
     auto res = std::filesystem::create_directory(sys);
-    std::cout << "Created dir: " << sys.string() << std::endl;
+    LOG_TRACE("Created dir: {}", sys.string());
     if (!res) {
-      std::cerr << "Failed to create dir: " << sys.string() << std::endl;
+      LOG_ERROR("Failed to create dir: {}", sys.string());
       return false;
     }
   }
@@ -98,9 +102,9 @@ bool Unpacker::Unpack() {
 
   if (!std::filesystem::is_directory(res)) {
     auto result = std::filesystem::create_directory(res);
-    std::cout << "Created dir: " << res.string() << std::endl;
+    LOG_TRACE("Created dir: {}", res.string());
     if (!result) {
-      std::cerr << "Failed to create dir: " << res.string() << std::endl;
+      LOG_ERROR("Failed to create dir: {}", res.string());
       return false;
     }
   }
@@ -121,7 +125,7 @@ bool Unpacker::Unpack() {
 }
 
 void Unpacker::Dump() {
-  std::cout << "Dumping iso to: " << mOptions.dump << std::endl;
+  LOG_INFO("Dumping iso to: {}", mOptions.dump);
   std::ofstream dumpstrm(mOptions.dump, std::ios::binary);
 
   mGcm.PrintBootHeader(dumpstrm);

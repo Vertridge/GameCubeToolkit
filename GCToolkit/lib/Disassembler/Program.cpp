@@ -2,6 +2,9 @@
 
 #include "Disassembler/Util.h"
 
+// Util
+#include <Logger/Logger.h>
+
 #include <algorithm>
 #include <cassert>
 #include <iostream>
@@ -151,7 +154,8 @@ TextSection *Program::GetTextSectionWithAddress(std::uint32_t address) {
   if (section != mTextSections.end()) {
     return &(*section);
   }
-  std::cout << "Could not find section for: 0x" << std::hex << address << "\n";
+  LOG_WARN("Could not find section for: 0x{0:x}", address);
+
   return nullptr;
 }
 
@@ -201,8 +205,8 @@ void PowerPC::ParseInBlocks(std::shared_ptr<Function> &function) {
       if (branchLoc != function->end_instr()) {
         brancheeInstructions.insert(*branchLoc);
       } else {
-        std::cerr << "Could not find branch to address: 0x" << std::hex
-                  << branchInstr->GetBranchAddress() << std::endl;
+        LOG_ERROR("Could not find branch to address: 0x{0:x}",
+                  branchInstr->GetBranchAddress());
       }
     }
   }

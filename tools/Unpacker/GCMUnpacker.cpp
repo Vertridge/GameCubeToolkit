@@ -6,18 +6,22 @@
 #include "Parser/GCM.h"
 #include "Unpacker/Unpacker.h"
 
+// Util
+#include <Logger/ConsoleLogger.h>
+#include <Logger/Logger.h>
+
 // Vendor
 #include "cxxopts.hpp"
 
 int Unpack(cxxopts::ParseResult &result) {
   if (!result.count("gcm")) {
-    std::cout << "gcm is required when unpacking see help" << std::endl;
+    LOG_ERROR("'gcm' is required when unpacking see help");
     return 1;
   }
 
   auto input = result["gcm"].as<std::string>();
 
-  std::cout << "GCM Unpacker: " << input << std::endl;
+  LOG_INFO("GCM Unpacker: {}", input);
 
   std::string dump = "gcmDump.txt";
   if (result.count("dump")) {
@@ -34,15 +38,16 @@ int Unpack(cxxopts::ParseResult &result) {
   unpacker.Dump();
 
   if (!unpacker.Unpack()) {
-    std::cerr << "Failed to unpack " << input << std::endl;
-    return 1;
+    LOG_ERROR("Failed to unpack {}", input);
+    return 0;
   }
+  LOG_INFO("Unpacking done");
 
   return 0;
 }
 
 int Repack(cxxopts::ParseResult &result) {
-  std::cerr << "Repacking is currently not supported" << std::endl;
+  LOG_ERROR("Repacking is currently not supported");
 
   std::string out = "./out";
   if (result.count("output")) {
@@ -52,7 +57,14 @@ int Repack(cxxopts::ParseResult &result) {
   return 1;
 }
 
+void InitLogger() {
+  auto &logger = util::Logger::GetSingleton();
+  logger.AddLogger(new util::ConsoleLogger());
+}
+
 int main(int argc, char *argv[]) {
+
+  InitLogger();
 
   cxxopts::Options options("GCMUnpacker", "Unpack GCM / iso");
 
@@ -71,13 +83,14 @@ int main(int argc, char *argv[]) {
   auto result = options.parse(argc, argv);
 
   if (result.count("help")) {
-    std::cout << options.help() << std::endl;
+    LOG_INFO(options.help());
     return 0;
   }
 
   if (result.count("pack") == 0 && result.count("unpack") == 0) {
-    std::cout << "Pack or unpack is required\n" << options.help() << std::endl;
-    return 0;
+    LOG_ERROR("Pack or unpack is required");
+    LOG_ERROR(options.help());
+    return 1;
   }
 
   if (result.count("unpack")) {

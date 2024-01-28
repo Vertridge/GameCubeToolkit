@@ -2,6 +2,10 @@
 
 #include "Binary.h"
 
+// Util
+#include <Logger/Logger.h>
+
+// stl
 #include <cerrno>
 #include <cstring>
 #include <fstream>
@@ -17,11 +21,10 @@ GCMFile::~GCMFile() { util::MunMap(mMem); }
 
 bool GCMFile::Parse(std::istream &stream) {
   if (stream.peek() == EOF) {
-    std::cerr << "Failed to open: " << mFileName << " " << std::strerror(errno)
-              << std::endl;
+    LOG_ERROR("Failed to open: '{}' - {}", mFileName, std::strerror(errno));
     return false;
   }
-  std::cerr << "Parsing header" << std::endl;
+  LOG_TRACE("Parsing header");
 
   std::istream_iterator<std::uint8_t> start(stream);
   mFileBuffer = std::vector<std::uint8_t>(start, {});
@@ -35,7 +38,7 @@ bool GCMFile::Parse(std::istream &stream) {
 
 bool GCMFile::Parse(std::string file) {
   mFileName = file;
-  std::cout << "Parsing File: " << mFileName << std::endl;
+  LOG_INFO("Parsing File: {}", mFileName);
 
   auto memMap = util::MmapFile(file);
 
@@ -73,9 +76,8 @@ bool GCMFile::ParseBootHeader() {
   util::SwapBinary(mBootHeader->Unknown);
 
   if (mBootHeader->DVDMagic != ExpectedDVDMagic) {
-    std::cerr << "DVD Magic " << std::hex << mBootHeader->DVDMagic
-              << " does not match expected " << std::hex << ExpectedDVDMagic
-              << std::endl;
+    LOG_ERROR("DVD Magic {0:x} does not match expected {0:x}",
+              mBootHeader->DVDMagic, ExpectedDVDMagic);
     return false;
   }
 
@@ -121,8 +123,8 @@ void GCMFile::WriteDiskHeader(std::ostream &os) {
 
 void GCMFile::WriteDolFile(std::ostream &os) {
   if (mBootHeader == nullptr) {
-    std::cerr << "Cannot write dol file, boot header has to be parsed"
-              << std::endl;
+    LOG_ERROR("Cannot write dol file, boot header has to be parsed");
+
     return;
   }
   auto dolOffset = mBootHeader->BootFileOffset;
@@ -134,8 +136,8 @@ void GCMFile::WriteDolFile(std::ostream &os) {
 
 void GCMFile::WriteFSTFile(std::ostream &os) {
   if (mBootHeader == nullptr) {
-    std::cerr << "Cannot write FST file, boot header has to be parsed"
-              << std::endl;
+    LOG_ERROR("Cannot write FST file, boot header has to be parsed");
+
     return;
   }
   auto fst = mFileBuffer.data() + mBootHeader->FSTOffset;

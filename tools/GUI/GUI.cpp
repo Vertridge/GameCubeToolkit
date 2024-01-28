@@ -2,6 +2,10 @@
 
 #include "GUIProgram.h"
 
+// Util
+#include <Logger/ConsoleLogger.h>
+#include <Logger/Logger.h>
+
 // Platform
 #include <Platform/FileSelector.h>
 
@@ -37,7 +41,7 @@ GUIOptions ParseCMDOptions(int argc, char *argv[]) {
   auto result = options.parse(argc, argv);
 
   if (result.count("help")) {
-    std::cout << options.help() << std::endl;
+    LOG_INFO(options.help());
     exit(0);
   }
 
@@ -54,22 +58,28 @@ GUIOptions ParseCMDOptions(int argc, char *argv[]) {
   return guiOptions;
 }
 
+void InitLogger() {
+  auto &logger = util::Logger::GetSingleton();
+  logger.AddLogger(new util::ConsoleLogger());
+}
+
 int main(int argc, char *argv[]) {
-  std::cout << "GUI Started" << std::endl;
+  InitLogger();
+
+  LOG_INFO("GUI Started");
 
   auto options = ParseCMDOptions(argc, argv);
 
   if (options.input == "") {
-    std::cout << "Select input file" << std::endl;
+    LOG_INFO("Select input file");
     options.input = Platform::FileSelector::SelectFile("Select input iso");
   }
   if (!std::filesystem::is_regular_file(options.input)) {
-    std::cerr << "Invalid file '" << options.input << "' selected."
-              << std::endl;
+    LOG_ERROR("Invalid file: '{}' selected", options.input);
     exit(1);
   }
 
-  std::cout << "Opening iso file: '" << options.input << "'." << std::endl;
+  LOG_INFO("Opening iso file: '{}'", options.input);
 
   GUI::GUIProgram program(
       {options.input, options.proj, options.dis, options.dump});

@@ -2,6 +2,9 @@
 
 #include <iostream>
 
+// Util
+#include <Logger/Logger.h>
+
 // vendor
 #include "imgui_impl_glfw.h"
 #include "imgui_impl_opengl3.h"
@@ -9,14 +12,16 @@
 using namespace GUI;
 
 Window::Window() {
-  std::cout << "Creating Window" << std::endl;
+  LOG_TRACE("Creating Window");
+
   if (!glfwInit()) {
-    std::cerr << "Failed to init window" << std::endl;
+    LOG_ERROR("Failed to init window");
+    return;
   }
 
   mWindow = glfwCreateWindow(640, 480, "GUI", NULL, NULL);
   if (!mWindow) {
-    std::cerr << "Failed to create Window" << std::endl;
+    LOG_ERROR("Failed to create Window");
   }
   glfwMaximizeWindow(mWindow);
 
@@ -48,7 +53,7 @@ void Window::EndDraw() {
 }
 
 Window::~Window() {
-  std::cout << "Destroying Window" << std::endl;
+  LOG_TRACE("Destroying Window");
   glfwDestroyWindow(mWindow);
   glfwTerminate();
 }

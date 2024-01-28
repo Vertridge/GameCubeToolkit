@@ -1,6 +1,8 @@
 #include "Parser/FST.h"
 
-#include "Binary.h"
+// Util
+#include <Binary.h>
+#include <Logger/Logger.h>
 
 #include <cassert>
 #include <cstring>
@@ -10,12 +12,12 @@
 using namespace Parsing;
 
 bool FST::Parse(std::uint8_t *table, std::size_t length) {
-  std::cerr << "Parsing FST" << std::endl;
+  LOG_TRACE("Parsing FST");
   if (table == nullptr) {
-    std::cerr << "FST table pointer is a nullptr";
+    LOG_ERROR("FST table pointer is a nullptr");
     return false;
   }
-  std::cerr << "Size of entry: " << sizeof(FSTEntry) << std::endl;
+  LOG_TRACE("Size of entry: {}", sizeof(FSTEntry));
 
   // First parse root dir entry
   mRootDirEntry = ParseEntry(table);
