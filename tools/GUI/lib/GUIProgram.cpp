@@ -5,6 +5,7 @@
 
 // UI
 #include <ImGuiObjects/LoggerGui.h>
+#include <ImGuiObjects/PackageViewerGui.h>
 #include <ImGuiObjects/UnpackerGui.h>
 
 // Util
@@ -36,6 +37,10 @@ void GUIProgram::InitUI() {
 
   mUiManager.AddUi(UIObjects::LoggerGui::GetID(),
                    std::make_unique<UIObjects::LoggerGui>());
+
+  mUiManager.AddChildToUi(UIObjects::UnpackerGui::GetID(),
+                          UIObjects::PackageViewerGui::GetID(),
+                          std::make_unique<UIObjects::PackageViewerGui>());
 
   mUiManager.Init();
 }

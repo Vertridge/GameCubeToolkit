@@ -33,7 +33,9 @@ void UnpackerGui::OnInit() {}
 
 void UnpackerGui::OnBeginDraw() {
   ImGui::Begin("Unpacker");
-
+  if (mUnpacked) {
+    ImGui::BeginDisabled();
+  }
   if (ImGui::Button("Unpack")) {
     auto &disk = Support::DiskSingleton::GetSingleton();
     if (disk.ProjectDir.empty()) {
@@ -42,6 +44,9 @@ void UnpackerGui::OnBeginDraw() {
 
     std::thread thread(Unpack);
     thread.detach();
+  }
+  if (mUnpacked) {
+    ImGui::EndDisabled();
   }
   ImGui::Separator();
 }

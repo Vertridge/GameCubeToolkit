@@ -7,16 +7,16 @@ using namespace GUILib;
 
 namespace UIObjects {
 
-class UnpackerGui : public UIBase {
+class PackageViewerGui : public UIBase {
 public:
-  ID(UI_ID::UNPACKER_UI);
+  ID(UI_ID::PACKAGE_VIEWER_UI);
 
   void OnInit() override;
   void OnBeginDraw() override;
   void OnEndDraw() override;
 
 private:
-  bool mUnpacked = false;
+  void DrawFileSystem();
 };
 
 } // namespace UIObjects
