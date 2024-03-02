@@ -48,6 +48,11 @@ void UnpackerGui::OnBeginDraw() {
   if (mUnpacked) {
     ImGui::EndDisabled();
   }
+  ImGui::SameLine();
+  ImGui::Text("%s",
+              std::filesystem::path(Support::DiskSingleton::GetSingleton().Iso)
+                  .stem()
+                  .c_str());
   ImGui::Separator();
 }
 

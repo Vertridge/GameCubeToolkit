@@ -12,6 +12,9 @@ void UIBase::Init() {
 }
 
 void UIBase::BeginDraw() {
+  if (!mEnabled) {
+    return;
+  }
   OnBeginDraw();
   for (auto &child : mChildren) {
     child->BeginDraw();
@@ -19,6 +22,9 @@ void UIBase::BeginDraw() {
 }
 
 void UIBase::EndDraw() {
+  if (!mEnabled) {
+    return;
+  }
   for (auto &child : mChildren) {
     child->EndDraw();
   }

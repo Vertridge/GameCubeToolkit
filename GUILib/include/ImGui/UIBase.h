@@ -23,7 +23,11 @@ public:
 
   void AddChild(UIBase *child);
 
+  void SetEnabled(bool b) { mEnabled = b; }
+  bool IsEnabled() { return mEnabled; }
+
 private:
+  bool mEnabled = true;
   std::vector<UIBase *> mChildren;
   UIBase *mParent = nullptr;
 };

@@ -88,7 +88,6 @@ bool DOLFile::ReadData(std::istream &input) {
 
 void DOLFile::PrintHeader(std::ostream &os) {
   // clang-format off
-  os << "Printing Header: " << mFileName << "\n";
   os << "TextSection Offsets: " << "\n";
   for (std::size_t i = 0; i < DOLNumberOfTextSections; ++i) {
     os << " 0x" << std::hex << mHeader->TextSectionOffsets[i] 

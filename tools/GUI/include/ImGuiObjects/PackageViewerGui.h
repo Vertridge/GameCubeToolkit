@@ -1,7 +1,11 @@
 #pragma once
 
+#include "FileViewers/FileViewerBase.h"
 #include "ImGui/UIBase.h"
 #include "ImGuiObjects/UI_ID.h"
+
+// stl
+#include <memory>
 
 using namespace GUILib;
 
@@ -17,6 +21,9 @@ public:
 
 private:
   void DrawFileSystem();
+  void OnFileSelected(const std::filesystem::path &path);
+  FileViewerBase *currentViewer = nullptr;
+  std::vector<std::unique_ptr<FileViewerBase>> mFileViewers;
 };
 
 } // namespace UIObjects
