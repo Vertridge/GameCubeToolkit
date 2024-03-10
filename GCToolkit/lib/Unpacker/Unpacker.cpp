@@ -27,27 +27,26 @@ using DirectoryMapTy = std::unordered_map<std::uint32_t, FSTDirectory>;
 FSTDirectory GetParentDir(Parsing::FST &fst, const Parsing::FSTEntry &entry,
                           std::uint32_t fileIndex, DirectoryMapTy &dirMap) {
   // FileOffset contains the parent dir.
-  if (entry.fileOffset == 0) {
+  if (entry.parentOffset == 0) {
     FSTDirectory dir{.fileIndex = fileIndex,
                      .parentIndex = 0,
                      .path = fst.GetString(entry.fileNameOffset),
-                     .lastFile = entry.fileLen};
-    LOG_ERROR("Added dir: {} at index {}", dir.path.string(), fileIndex);
+                     .lastFile = entry.nextOffset};
+
     dirMap.emplace(fileIndex, dir);
     return dir;
   }
-  dirMap[entry.fileOffset];
+  dirMap[entry.parentOffset];
 
-  if (!dirMap.contains(entry.fileOffset)) {
-    LOG_ERROR("Parent dir not found at offset {}", entry.fileOffset);
+  if (!dirMap.contains(entry.parentOffset)) {
+    LOG_ERROR("Parent dir not found at offset {}", entry.parentOffset);
   }
-  auto parentEntry = fst.GetEntry(entry.fileOffset - 1);
-  auto parentDir = dirMap[entry.fileOffset];
+  auto parentEntry = fst.GetEntry(entry.parentOffset - 1);
+  auto parentDir = dirMap[entry.parentOffset];
   FSTDirectory dir{.fileIndex = fileIndex,
-                   .parentIndex = entry.fileOffset,
+                   .parentIndex = entry.parentOffset,
                    .path = parentDir.path / fst.GetString(entry.fileNameOffset),
-                   .lastFile = entry.fileLen};
-  LOG_ERROR("Added dir: {} at index {}", dir.path.string(), fileIndex);
+                   .lastFile = entry.nextOffset};
   dirMap.emplace(fileIndex, dir);
   return dir;
 }
@@ -78,7 +77,6 @@ void WriteAssets(std::filesystem::path basePath, Parsing::GCMFile &gcm,
     // The file index is 1 higher then the lastIndex, if we are at the last file
     // we can already move back to the parent.
     if (fileIndex == currentDir.lastFile) {
-      LOG_ERROR("Looking for dir at index {}", currentDir.parentIndex);
       currentDir = directoryMap[currentDir.parentIndex];
       curPath = basePath / currentDir.path;
     }

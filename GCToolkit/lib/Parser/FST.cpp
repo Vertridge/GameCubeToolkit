@@ -22,8 +22,8 @@ bool FST::Parse(std::uint8_t *table, std::size_t length) {
   // First parse root dir entry
   mRootDirEntry = ParseEntry(table);
   std::uint8_t *tablePtr = table + sizeof(FSTEntry);
-  // For the root entry filelen is the number of entries.
-  for (std::uint32_t i = 1; i < mRootDirEntry.fileLen; ++i) {
+
+  for (std::uint32_t i = 1; i < mRootDirEntry.numEntries; ++i) {
     mEntries.push_back(ParseEntry(tablePtr));
     tablePtr += sizeof(FSTEntry);
   }

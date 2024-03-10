@@ -12,9 +12,18 @@ namespace Parsing {
 struct __attribute__((packed)) FSTEntry {
   std::uint8_t flags;          // File: 0, Dir: 1
   util::uint24 fileNameOffset; // offset into string table
-  std::uint32_t fileOffset;    // Offset of the file, parent offset for dir
-  std::uint32_t fileLen; // lenght of the file, number of entries (root) or next
-                         // offset (dir)
+  // Offset of the file, parent offset for dir
+  union {
+    std::uint32_t fileOffset;
+    std::uint32_t parentOffset;
+  };
+  // lenght of the file, number of entries (root) or
+  // next offset (dir)
+  union {
+    std::uint32_t fileLen;
+    std::uint32_t numEntries;
+    std::uint32_t nextOffset; // last file of the current dir.
+  };
 };
 
 class FST {
