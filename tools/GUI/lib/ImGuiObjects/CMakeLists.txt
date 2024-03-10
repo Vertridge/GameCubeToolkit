@@ -3,5 +3,6 @@ add_library(ImGuiObjs UnpackerGui.cpp
                       PackageViewerGui.cpp
                       FileViewers/DOLViewerGui.cpp
                       FileViewers/FileViewerBase.cpp
-                      FileViewers/TxtViewerGui.cpp)
+                      FileViewers/TxtViewerGui.cpp
+                      FileViewers/BNRViewerGui.cpp)
 target_link_libraries(ImGuiObjs ImGuiLib GUILib Unpacker Logger)

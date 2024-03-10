@@ -3,6 +3,7 @@
 #include <Logger/Logger.h>
 #include <Support/DiskSingleton.h>
 
+#include "ImGuiObjects/FileViewers/BNRViewerGui.h"
 #include "ImGuiObjects/FileViewers/DOLViewerGui.h"
 #include "ImGuiObjects/FileViewers/TxtViewerGui.h"
 
@@ -17,6 +18,7 @@ namespace UIObjects {
 void PackageViewerGui::OnInit() {
   mFileViewers.emplace_back(std::make_unique<DOLViewerGui>());
   mFileViewers.emplace_back(std::make_unique<TxtViewerGui>());
+  mFileViewers.emplace_back(std::make_unique<BNRViewerGui>());
 }
 
 void PackageViewerGui::OnFileSelected(const std::filesystem::path &path) {

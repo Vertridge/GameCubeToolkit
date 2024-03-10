@@ -28,8 +28,8 @@ struct DOLHeader {
 class DOLFile {
 public:
   DOLFile() = default;
-  DOLFile(std::string file);
-  bool Parse(std::string file);
+  DOLFile(const std::string &file);
+  bool Parse(const std::string &file);
   bool Parse(std::istream &stream);
   bool ParseHeader(std::istream &input);
   bool ReadData(std::istream &input);

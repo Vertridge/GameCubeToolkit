@@ -13,7 +13,7 @@
 
 using namespace Parsing;
 
-DOLFile::DOLFile(std::string file) { Parse(file); }
+DOLFile::DOLFile(const std::string &file) { Parse(file); }
 
 bool DOLFile::Parse(std::istream &stream) {
   if (stream.peek() == EOF) {
@@ -27,7 +27,7 @@ bool DOLFile::Parse(std::istream &stream) {
   return true;
 }
 
-bool DOLFile::Parse(std::string file) {
+bool DOLFile::Parse(const std::string &file) {
   mFileName = file;
   LOG_INFO("Parsing File: {}", mFileName);
   std::ifstream input(file.c_str(), std::ios::binary);
