@@ -85,7 +85,7 @@ void WriteAssets(std::filesystem::path basePath, Parsing::GCMFile &gcm,
     auto filePath = curPath / fileName;
     std::ofstream ofstrm(filePath, std::ios::binary);
     auto *filePtr = buffer + entry.fileOffset;
-    LOG_TRACE("Creating file: {} index {}", filePath.string(), fileIndex);
+    LOG_TRACE("Creating file: {}", filePath.string());
 
     ofstrm.write(reinterpret_cast<char *>(filePtr), entry.fileLen);
   }

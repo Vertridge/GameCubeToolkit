@@ -37,12 +37,20 @@ void PackageViewerGui::DrawFileSystem() {
   if (projectDir.empty()) {
     return;
   }
+  static int selectedIndex = -1;
+  int i = 0;
   for (const auto &entry :
        std::filesystem::recursive_directory_iterator(projectDir)) {
+    if (entry.is_directory()) {
+      continue;
+    }
     if (ImGui::Selectable(
-            std::filesystem::relative(entry.path(), projectDir).c_str())) {
+            std::filesystem::relative(entry.path(), projectDir).c_str(),
+            selectedIndex == i)) {
+      selectedIndex = i;
       OnFileSelected(entry.path());
     }
+    ++i;
   }
 }
 
