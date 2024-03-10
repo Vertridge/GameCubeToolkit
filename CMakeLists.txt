@@ -10,6 +10,8 @@ set(CMAKE_BUILD_TYPE "Debug")
 set(CPACK_PROJECT_NAME ${PROJECT_NAME})
 set(CPACK_PROJECT_VERSION ${PROJECT_VERSION})
 
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
+
 # Find clang executable and set it as compiler
 find_program(Clang_P clang++ REQUIRED True)
 set(CMAKE_CXX_COMPILER ${Clang_P})

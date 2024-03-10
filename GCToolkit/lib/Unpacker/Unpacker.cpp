@@ -4,47 +4,90 @@
 #include <Logger/Logger.h>
 
 // stl
+#include <cstdint>
 #include <filesystem>
 #include <fstream>
 #include <iostream>
 #include <thread>
+#include <unordered_map>
 
 namespace Unpacking {
 
 namespace {
-std::filesystem::path GetParentDir(Parsing::FST &fst,
-                                   const Parsing::FSTEntry &entry) {
+
+struct FSTDirectory {
+  std::uint32_t fileIndex;
+  std::uint32_t parentIndex;
+  std::filesystem::path path;
+  std::uint32_t lastFile;
+};
+
+using DirectoryMapTy = std::unordered_map<std::uint32_t, FSTDirectory>;
+
+FSTDirectory GetParentDir(Parsing::FST &fst, const Parsing::FSTEntry &entry,
+                          std::uint32_t fileIndex, DirectoryMapTy &dirMap) {
   // FileOffset contains the parent dir.
   if (entry.fileOffset == 0) {
-    return fst.GetString(entry.fileNameOffset);
+    FSTDirectory dir{.fileIndex = fileIndex,
+                     .parentIndex = 0,
+                     .path = fst.GetString(entry.fileNameOffset),
+                     .lastFile = entry.fileLen};
+    LOG_ERROR("Added dir: {} at index {}", dir.path.string(), fileIndex);
+    dirMap.emplace(fileIndex, dir);
+    return dir;
   }
-  auto parent = fst.GetEntry(entry.fileOffset - 1);
-  return GetParentDir(fst, parent) / fst.GetString(entry.fileNameOffset);
+  dirMap[entry.fileOffset];
+
+  if (!dirMap.contains(entry.fileOffset)) {
+    LOG_ERROR("Parent dir not found at offset {}", entry.fileOffset);
+  }
+  auto parentEntry = fst.GetEntry(entry.fileOffset - 1);
+  auto parentDir = dirMap[entry.fileOffset];
+  FSTDirectory dir{.fileIndex = fileIndex,
+                   .parentIndex = entry.fileOffset,
+                   .path = parentDir.path / fst.GetString(entry.fileNameOffset),
+                   .lastFile = entry.fileLen};
+  LOG_ERROR("Added dir: {} at index {}", dir.path.string(), fileIndex);
+  dirMap.emplace(fileIndex, dir);
+  return dir;
 }
 
 void WriteAssets(std::filesystem::path basePath, Parsing::GCMFile &gcm,
                  Parsing::FST &fst) {
   auto *buffer = gcm.GetFileBuffer().data();
   auto curPath = basePath;
+  DirectoryMapTy directoryMap;
+  std::uint32_t fileIndex = 0;
+  FSTDirectory currentDir;
   for (const auto &entry : fst) {
+    ++fileIndex;
     if (entry.flags & 1) {
-      auto dirName = GetParentDir(fst, entry);
-
-      auto dirPath = basePath / dirName;
-
+      auto fstDir = GetParentDir(fst, entry, fileIndex, directoryMap);
+      auto dirPath = basePath / fstDir.path;
+      currentDir = fstDir;
       auto res = std::filesystem::create_directory(dirPath);
       curPath = dirPath;
-      LOG_TRACE("Created dir: {}", dirPath.string());
+      LOG_TRACE("Created dir: {} index {} lastIndex {}", dirPath.string(),
+                fileIndex, fstDir.lastFile);
       if (!res) {
         LOG_ERROR("Failed to create dir: {}", dirPath.string());
       }
       continue;
     }
+
+    // The file index is 1 higher then the lastIndex, if we are at the last file
+    // we can already move back to the parent.
+    if (fileIndex == currentDir.lastFile) {
+      LOG_ERROR("Looking for dir at index {}", currentDir.parentIndex);
+      currentDir = directoryMap[currentDir.parentIndex];
+      curPath = basePath / currentDir.path;
+    }
+
     auto &fileName = fst.GetString(entry.fileNameOffset);
     auto filePath = curPath / fileName;
     std::ofstream ofstrm(filePath, std::ios::binary);
     auto *filePtr = buffer + entry.fileOffset;
-    LOG_TRACE("Creating file: {}", filePath.string());
+    LOG_TRACE("Creating file: {} index {}", filePath.string(), fileIndex);
 
     ofstrm.write(reinterpret_cast<char *>(filePtr), entry.fileLen);
   }
