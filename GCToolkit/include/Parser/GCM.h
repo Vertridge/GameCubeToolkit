@@ -1,7 +1,9 @@
 #pragma once
 
+#include <cstddef>
 #include <cstdint>
 #include <istream>
+#include <ostream>
 #include <vector>
 
 #include "MemoryMap.h"
@@ -93,17 +95,27 @@ public:
   bool Parse(std::string file);
   bool Parse(std::istream &stream);
 
-  bool ParseBootHeader();
+  bool Write(std::ostream &os);
+
+  bool ParseBootHeader(bool binswap = true);
   void PrintBootHeader(std::ostream &os);
   void WriteBootHeader(std::ostream &os);
-  bool ParseDiskHeader();
+  void ReadBootHeader(std::istream &is);
+
+  bool ParseDiskHeader(bool binswap = true);
   void PrintDiskHeader(std::ostream &os, bool printData = false);
   void WriteDiskHeader(std::ostream &os);
-  bool ParseAppLoaderHeader();
+  void ReadDiskHeader(std::istream &is);
+
+  bool ParseAppLoaderHeader(bool binswap = true);
   void PrintAppLoaderHeader(std::ostream &os);
   void WriteAppLoaderHeader(std::ostream &os);
+  void ReadAppLoaderHeader(std::istream &is);
+
   void WriteDolFile(std::ostream &os);
+  void ReadDolFile(std::istream &is, std::size_t size);
   void WriteFSTFile(std::ostream &os);
+  void ReadFSTFile(std::istream &is, std::size_t size);
 
   std::string_view GetFileName() { return mFileName; }
 

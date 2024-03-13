@@ -6,14 +6,27 @@
 #include <Logger/Logger.h>
 
 // stl
+#include <cassert>
 #include <cerrno>
+#include <cstddef>
 #include <cstring>
 #include <fstream>
 #include <iomanip>
 #include <iostream>
 #include <iterator>
+#include <ostream>
 
-using namespace Parsing;
+namespace Parsing {
+
+namespace {
+
+constexpr std::size_t GetBooHeaderOffset() { return 0; }
+constexpr std::size_t GetDiskHeaderOffset() { return sizeof(BootHeader); }
+constexpr std::size_t GetAppLoaderHeaderOffset() {
+  return sizeof(BootHeader) + sizeof(DiskHeaderInformation);
+}
+
+} // namespace
 
 GCMFile::GCMFile(std::string file) { Parse(file); }
 
@@ -54,26 +67,39 @@ bool GCMFile::Parse(std::string file) {
   return true;
 }
 
-bool GCMFile::ParseBootHeader() {
-  mBootHeader = reinterpret_cast<BootHeader *>(mFileBuffer.data());
+bool GCMFile::Write(std::ostream &os) {
 
-  // Swap endiness.
-  util::SwapBinary(mBootHeader->GameCode);
-  util::SwapBinary(mBootHeader->MakerCode);
+  LOG_INFO("Writing GCM");
 
-  util::SwapBinary(mBootHeader->DVDMagic);
+  os.write(reinterpret_cast<char *>(mFileBuffer.data()), mFileBuffer.size());
 
-  util::SwapBinary(mBootHeader->DebugMonitorOffset);
-  util::SwapBinary(mBootHeader->DebugMonitorLoadAddress);
+  return true;
+}
 
-  util::SwapBinary(mBootHeader->BootFileOffset);
-  util::SwapBinary(mBootHeader->FSTOffset);
-  util::SwapBinary(mBootHeader->FSTSize);
-  util::SwapBinary(mBootHeader->FSTMaxSize);
+bool GCMFile::ParseBootHeader(bool binswap) {
+  const auto offset = GetBooHeaderOffset();
+  assert(mFileBuffer.size() >= sizeof(BootHeader));
+  mBootHeader = reinterpret_cast<BootHeader *>(mFileBuffer.data() + offset);
 
-  util::SwapBinary(mBootHeader->UserPosition);
-  util::SwapBinary(mBootHeader->UserLength);
-  util::SwapBinary(mBootHeader->Unknown);
+  if (binswap) {
+    // Swap endiness.
+    util::SwapBinary(mBootHeader->GameCode);
+    util::SwapBinary(mBootHeader->MakerCode);
+
+    util::SwapBinary(mBootHeader->DVDMagic);
+
+    util::SwapBinary(mBootHeader->DebugMonitorOffset);
+    util::SwapBinary(mBootHeader->DebugMonitorLoadAddress);
+
+    util::SwapBinary(mBootHeader->BootFileOffset);
+    util::SwapBinary(mBootHeader->FSTOffset);
+    util::SwapBinary(mBootHeader->FSTSize);
+    util::SwapBinary(mBootHeader->FSTMaxSize);
+
+    util::SwapBinary(mBootHeader->UserPosition);
+    util::SwapBinary(mBootHeader->UserLength);
+    util::SwapBinary(mBootHeader->Unknown);
+  }
 
   if (mBootHeader->DVDMagic != ExpectedDVDMagic) {
     LOG_ERROR("DVD Magic {0:x} does not match expected {0:x}",
@@ -84,10 +110,16 @@ bool GCMFile::ParseBootHeader() {
   return true;
 }
 
-bool GCMFile::ParseDiskHeader() {
-  const std::size_t offset = sizeof(BootHeader);
+bool GCMFile::ParseDiskHeader(bool binswap) {
+  const std::size_t offset = GetDiskHeaderOffset();
+  assert(mFileBuffer.size() >= offset + sizeof(DiskHeaderInformation));
+
   mDiskHeaderInfo =
       reinterpret_cast<DiskHeaderInformation *>(mFileBuffer.data() + offset);
+
+  if (!binswap) {
+    return true;
+  }
 
   util::SwapBinary(mDiskHeaderInfo->DebugMonitorSize);
   util::SwapBinary(mDiskHeaderInfo->SimulatedMemorySize);
@@ -100,10 +132,16 @@ bool GCMFile::ParseDiskHeader() {
   return true;
 }
 
-bool GCMFile::ParseAppLoaderHeader() {
-  const std::size_t offset = sizeof(BootHeader) + sizeof(DiskHeaderInformation);
+bool GCMFile::ParseAppLoaderHeader(bool binswap) {
+  const std::size_t offset = GetAppLoaderHeaderOffset();
+  assert(mFileBuffer.size() >= offset + sizeof(AppLoaderHeader));
+
   mAppLoaderHeader =
       reinterpret_cast<AppLoaderHeader *>(mFileBuffer.data() + offset);
+
+  if (!binswap) {
+    return true;
+  }
 
   util::SwapBinary(mAppLoaderHeader->AppLoaderEntryPoint);
   util::SwapBinary(mAppLoaderHeader->AppLoaderSize);
@@ -146,6 +184,67 @@ void GCMFile::WriteFSTFile(std::ostream &os) {
 
 void GCMFile::WriteAppLoaderHeader(std::ostream &os) {
   os.write(reinterpret_cast<char *>(mAppLoaderHeader), sizeof(AppLoaderHeader));
+}
+
+void GCMFile::ReadBootHeader(std::istream &is) {
+  const std::size_t offset = GetBooHeaderOffset();
+  assert(mFileBuffer.capacity() == offset &&
+         "Buffer does not have correct size before resizing");
+  mFileBuffer.reserve(sizeof(BootHeader));
+  is.read(reinterpret_cast<char *>(mFileBuffer.data() + offset),
+          sizeof(BootHeader));
+
+  ParseBootHeader(false);
+}
+
+void GCMFile::ReadDiskHeader(std::istream &is) {
+  const std::size_t offset = GetDiskHeaderOffset();
+  assert(mFileBuffer.capacity() == offset &&
+         "Buffer does not have correct size before resizing");
+
+  mFileBuffer.reserve(sizeof(DiskHeaderInformation));
+  is.read(reinterpret_cast<char *>(mFileBuffer.data() + offset),
+          sizeof(DiskHeaderInformation));
+
+  ParseDiskHeader(false);
+}
+
+void GCMFile::ReadAppLoaderHeader(std::istream &is) {
+  const std::size_t offset = GetAppLoaderHeaderOffset();
+  assert(mFileBuffer.capacity() == offset &&
+         "Buffer does not have correct size before resizing");
+
+  mFileBuffer.reserve(sizeof(DiskHeaderInformation));
+  is.read(reinterpret_cast<char *>(mFileBuffer.data() + offset),
+          sizeof(DiskHeaderInformation));
+
+  ParseAppLoaderHeader(false);
+}
+
+void GCMFile::ReadDolFile(std::istream &is, std::size_t size) {
+  if (mBootHeader == nullptr) {
+    LOG_ERROR("Cannot write dol file, boot header has to be parsed");
+
+    return;
+  }
+
+  auto dolOffset = mFileBuffer.capacity();
+  mFileBuffer.reserve(size);
+  is.read(reinterpret_cast<char *>(mFileBuffer.data() + dolOffset), size);
+  mBootHeader->BootFileOffset = dolOffset;
+}
+
+void GCMFile::ReadFSTFile(std::istream &is, std::size_t size) {
+  if (mBootHeader == nullptr) {
+    LOG_ERROR("Cannot write fst file, boot header has to be parsed");
+
+    return;
+  }
+  auto fstOffset = mFileBuffer.capacity();
+  mFileBuffer.reserve(size);
+  is.read(reinterpret_cast<char *>(mFileBuffer.data() + fstOffset), size);
+  mBootHeader->FSTOffset = fstOffset;
+  mBootHeader->FSTSize = size;
 }
 
 void GCMFile::PrintBootHeader(std::ostream &os) {
@@ -263,3 +362,5 @@ void GCMFile::PrintAppLoaderHeader(std::ostream &os) {
   os << "Trailer Size: 0x" << std::hex << mAppLoaderHeader->TrailerSize << "\n";
   // clang-format on
 }
+
+} // namespace Parsing

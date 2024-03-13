@@ -49,9 +49,22 @@ int Unpack(cxxopts::ParseResult &result) {
 int Repack(cxxopts::ParseResult &result) {
   LOG_ERROR("Repacking is currently not supported");
 
-  std::string out = "./out";
-  if (result.count("output")) {
-    out = result["output"].as<std::string>();
+  std::string inputDir = "./out";
+  if (!result.count("input")) {
+    LOG_ERROR("'input' is required when unpacking see help");
+    return 1;
+  }
+
+  inputDir = result["input"].as<std::string>();
+
+  std::string dump = "gcmDump.txt";
+  if (result.count("dump")) {
+    dump = result["dump"].as<std::string>();
+  }
+
+  std::string output = "game.gcm";
+  if (result.count("gcm")) {
+    output = result["gcm"].as<std::string>();
   }
 
   return 1;
@@ -70,7 +83,8 @@ int main(int argc, char *argv[]) {
 
   // clang-format off
   options.add_options()
-      ("o,output", "Output directory", cxxopts::value<std::string>())
+      ("o,output", "Output directory when unpacking", cxxopts::value<std::string>())
+      ("i,input", "Input directory when repacking", cxxopts::value<std::string>())
       ("d,dump-file", "Dump file", cxxopts::value<std::string>())
       ("u,unpack", "Unpack")
       ("p,pack", "Repack")
