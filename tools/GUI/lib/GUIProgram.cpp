@@ -16,7 +16,11 @@
 
 namespace GUI {
 
-GUIProgram::GUIProgram(ProgramOptions options) : mOptions(options) {}
+GUIProgram *GUIProgram::mInstance = nullptr;
+
+GUIProgram::GUIProgram(ProgramOptions options) : mOptions(options) {
+  mInstance = this;
+}
 
 void GUIProgram::Init() {
   auto &disk = Support::DiskSingleton::GetSingleton();

@@ -19,6 +19,9 @@ class GUIProgram {
 
 public:
   GUIProgram(ProgramOptions options);
+
+  static GUIProgram *GetInstance() { return mInstance; }
+
   void Init();
 
   void Start();
@@ -29,6 +32,8 @@ public:
 
   void End();
 
+  GUILib::UIManager &GetUiManager() { return mUiManager; }
+
 private:
   void InitUI();
 
@@ -37,6 +42,8 @@ private:
   Window mWindow;
   ProgramOptions mOptions;
   GUILib::UIManager mUiManager;
+
+  static GUIProgram *mInstance;
 };
 
 } // namespace GUI

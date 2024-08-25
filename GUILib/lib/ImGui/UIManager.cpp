@@ -6,11 +6,17 @@ void UIManager::Init() {
   for (auto &ui : mUi) {
     ui.second->Init();
   }
+  mInit = true;
 }
 
 Error UIManager::AddUi(int id, std::unique_ptr<UIBase> ui) {
   if (mUi.find(id) != mUi.end()) {
     return MakeError("Key already exists in map");
+  }
+
+  // If the UI is allready initialised, init the UI element when it is added.
+  if (mInit) {
+    ui->Init();
   }
   mUi.emplace(id, std::move(ui));
   return Error::Success();

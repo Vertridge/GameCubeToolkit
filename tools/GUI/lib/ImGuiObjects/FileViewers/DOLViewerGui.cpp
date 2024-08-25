@@ -1,6 +1,8 @@
 #include "ImGuiObjects/FileViewers/DOLViewerGui.h"
 
 // GCToolkit
+#include <GUIProgram.h>
+#include <ImGuiObjects/DOLDisassemblerGUI.h>
 #include <Parser/DOL.h>
 #include <Support/DiskSingleton.h>
 
@@ -12,6 +14,7 @@
 
 // stl
 #include <fstream>
+#include <memory>
 #include <sstream>
 
 namespace UIObjects {
@@ -31,7 +34,11 @@ void DOLViewerGui::OnBeginDraw() {
   ImGui::EndChild();
   ImGui::Separator();
   if (ImGui::Button("Disassemble")) {
-    LOG_INFO("Disassembling! (TODO)");
+    LOG_INFO("Disassembling!");
+
+    GUI::GUIProgram::GetInstance()->GetUiManager().AddUi(
+        DOLDisassemblerGui::GetID(),
+        std::make_unique<DOLDisassemblerGui>(mFile));
   }
 }
 
