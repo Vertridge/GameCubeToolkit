@@ -159,6 +159,8 @@ TextSection *Program::GetTextSectionWithAddress(std::uint32_t address) {
   return nullptr;
 }
 
+namespace {
+
 std::shared_ptr<Function>
 CreateFunction(std::uint32_t address,
                std::optional<std::string> name = std::nullopt) {
@@ -190,7 +192,7 @@ CreateBlock(std::uint32_t address,
   return std::make_shared<Block>(stream.str(), address);
 }
 
-void PowerPC::ParseInBlocks(std::shared_ptr<Function> &function) {
+void ParseInBlocks(std::shared_ptr<Function> &function) {
   // Collect all address that are jumped to.
   std::unordered_set<std::shared_ptr<Instruction>> brancheeInstructions;
   for (auto instrIt = function->begin_instr(); instrIt != function->end_instr();
@@ -241,6 +243,8 @@ void PowerPC::ParseInBlocks(std::shared_ptr<Function> &function) {
     }
   }
 }
+
+} // namespace
 
 void PowerPC::ParseInstructionToFunctions(Program &program) {
 

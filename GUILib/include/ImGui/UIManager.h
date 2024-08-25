@@ -29,6 +29,7 @@ private:
 
   std::unordered_map<int, std::unique_ptr<UIBase>> mUi;
   std::unordered_map<int, ChildInfo> mChildren;
+  bool mInit = false;
 };
 
 } // namespace GUILib

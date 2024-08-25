@@ -283,6 +283,5 @@ private:
 };
 
 void ParseInstructionToFunctions(Program &program);
-void ParseInBlocks(std::shared_ptr<Function> &function);
 
 } // namespace PowerPC
