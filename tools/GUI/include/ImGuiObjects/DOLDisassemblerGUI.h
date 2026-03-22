@@ -29,6 +29,7 @@ private:
   const std::filesystem::path mDolPath;
   Parsing::DOLFile mDol;
   PowerPC::Program mProgram;
+  std::string mProgramDump;
 };
 
 } // namespace UIObjects

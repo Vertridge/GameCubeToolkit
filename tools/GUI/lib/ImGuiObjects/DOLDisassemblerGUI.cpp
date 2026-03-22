@@ -11,6 +11,7 @@
 
 // stl
 #include <fstream>
+#include <sstream>
 
 using namespace GUILib;
 
@@ -32,9 +33,17 @@ void DOLDisassemblerGui::OnInit() {
   LOG_INFO("Disassembly written to {}",
            Support::DiskSingleton::GetSingleton().Disassembly.string());
   PowerPC::ParseInstructionToFunctions(mProgram);
+  LOG_INFO("Disassembling Done!");
+  std::stringstream sstream;
+  mProgram.Dump(sstream);
+  mProgramDump = std::move(sstream).str();
 }
 
-void DOLDisassemblerGui::OnBeginDraw() { ImGui::Begin("DOL Disassembly"); }
+void DOLDisassemblerGui::OnBeginDraw() {
+  ImGui::Begin("DOL Disassembly");
+
+  ImGui::Text("%s", mProgramDump.c_str());
+}
 
 void DOLDisassemblerGui::OnEndDraw() { ImGui::End(); }
 
